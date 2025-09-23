@@ -1,0 +1,168 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  /**
+   * Recipe app theme with warm, inviting colors
+   * HSL values for Tailwind CSS compatibility
+   */
+  :root {
+    /* Base colors */
+    --background: 0 0% 100%;
+    --foreground: 20 14.3% 4.1%;
+
+    /* Card and surfaces */
+    --card: 0 0% 100%;
+    --card-foreground: 20 14.3% 4.1%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 20 14.3% 4.1%;
+
+    /* Primary - Warm orange for cooking/food theme */
+    --primary: 21 85% 56%;
+    --primary-foreground: 0 0% 98%;
+
+    /* Secondary - Soft cream */
+    --secondary: 39 77% 91%;
+    --secondary-foreground: 39 77% 11%;
+
+    /* Muted tones */
+    --muted: 39 77% 91%;
+    --muted-foreground: 25 5.3% 44.7%;
+
+    /* Accent - Fresh green for healthy ingredients */
+    --accent: 142 76% 36%;
+    --accent-foreground: 355.7 100% 97.3%;
+
+    /* Destructive */
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    /* Borders and inputs */
+    --border: 20 5.9% 90%;
+    --input: 20 5.9% 90%;
+    --ring: 21 85% 56%;
+
+    /* Recipe app specific colors */
+    --recipe-orange: 21 85% 56%;
+    --recipe-orange-light: 28 100% 94%;
+    --recipe-green: 142 76% 36%;
+    --recipe-green-light: 142 76% 94%;
+    --recipe-cream: 39 77% 91%;
+    --recipe-warm-gray: 25 5.3% 44.7%;
+
+    --radius: 0.75rem;
+
+    /* Sidebar colors */
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  .dark {
+    /* Dark mode with warm, cozy feel */
+    --background: 20 14.3% 4.1%;
+    --foreground: 0 0% 95%;
+
+    --card: 20 14.3% 4.1%;
+    --card-foreground: 0 0% 95%;
+
+    --popover: 20 14.3% 4.1%;
+    --popover-foreground: 0 0% 95%;
+
+    --primary: 21 85% 56%;
+    --primary-foreground: 20 14.3% 4.1%;
+
+    --secondary: 12 6.5% 15.1%;
+    --secondary-foreground: 0 0% 95%;
+
+    --muted: 12 6.5% 15.1%;
+    --muted-foreground: 24 5.4% 63.9%;
+
+    --accent: 142 76% 36%;
+    --accent-foreground: 0 0% 95%;
+
+    --destructive: 0 72.2% 50.6%;
+    --destructive-foreground: 0 85.7% 97.3%;
+
+    --border: 12 6.5% 15.1%;
+    --input: 12 6.5% 15.1%;
+    --ring: 21 85% 56%;
+
+    /* Dark mode recipe colors */
+    --recipe-orange: 21 85% 56%;
+    --recipe-orange-light: 21 85% 15%;
+    --recipe-green: 142 76% 36%;
+    --recipe-green-light: 142 76% 15%;
+    --recipe-cream: 12 6.5% 15.1%;
+    --recipe-warm-gray: 24 5.4% 63.9%;
+
+    /* Dark sidebar */
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-heading;
+  }
+}
+
+@layer components {
+  .recipe-card {
+    @apply bg-card border border-border rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow duration-200;
+  }
+
+  .recipe-badge {
+    @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium;
+  }
+
+  .recipe-badge-difficulty-easy {
+    @apply bg-recipe-green-light text-recipe-green;
+  }
+
+  .recipe-badge-difficulty-medium {
+    @apply bg-recipe-orange-light text-recipe-orange;
+  }
+
+  .recipe-badge-difficulty-hard {
+    @apply bg-destructive/10 text-destructive;
+  }
+
+  .ingredient-chip {
+    @apply inline-flex items-center rounded-full bg-recipe-cream px-3 py-1 text-sm text-recipe-warm-gray;
+  }
+
+  .gradient-bg {
+    background: linear-gradient(135deg, hsl(var(--recipe-orange-light)) 0%, hsl(var(--recipe-green-light)) 100%);
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
