@@ -3,14 +3,15 @@
   "name": "fridgechef",
   "buildCommand": "npm run build",
   "outputDirectory": "dist/spa",
+  "installCommand": "npm install",
   "routes": [
     {
       "src": "/api/(.*)",
-      "dest": "/dist/server/node-build.mjs"
+      "dest": "/api/serverless.js"
     },
     {
       "src": "/(.*)",
-      "dest": "/dist/spa/index.html"
+      "dest": "/index.html"
     }
   ],
   "env": {
@@ -22,7 +23,7 @@
     }
   },
   "functions": {
-    "dist/server/node-build.mjs": {
+    "api/serverless.js": {
       "maxDuration": 30
     }
   }
