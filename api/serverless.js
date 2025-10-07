@@ -3,7 +3,7 @@
 const serverless = require('serverless-http');
 
 // Import the built server module
-const { createServer } = require('../dist/server/production.js');
+const { createServer } = require('../dist/server/node-build.js');
 
 const app = createServer();
 
