@@ -1,6 +1,5 @@
 {
   "version": 2,
-  "name": "fridgechef",
   "buildCommand": "npm run build",
   "outputDirectory": "dist/spa",
   "installCommand": "npm install",
