@@ -24,7 +24,6 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: '20'
-        cache: 'npm'
 
     - name: Clean install dependencies
       run: |
@@ -57,7 +56,6 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: '20'
-        cache: 'npm'
 
     - name: Install Vercel CLI
       run: npm install --global vercel@latest
@@ -132,7 +130,6 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: '20'
-        cache: 'npm'
 
     - name: Install Vercel CLI
       run: npm install --global vercel@latest
