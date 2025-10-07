@@ -27,7 +27,9 @@
     "openai": "^4.67.3",
     "uuid": "^10.0.0",
     "bcrypt": "^5.1.1",
-    "jsonwebtoken": "^9.0.2"
+    "jsonwebtoken": "^9.0.2",
+    "vite": "^5.4.8",
+    "@vitejs/plugin-react-swc": "^3.7.1"
   },
   "devDependencies": {
     "@hookform/resolvers": "^3.9.0",
@@ -69,7 +71,6 @@
     "@types/uuid": "^10.0.0",
     "@types/bcrypt": "^5.0.2",
     "@types/jsonwebtoken": "^9.0.7",
-    "@vitejs/plugin-react-swc": "^3.7.1",
     "autoprefixer": "^10.4.21",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -99,7 +100,6 @@
     "tsx": "^4.7.0",
     "typescript": "^5.5.3",
     "vaul": "^0.9.3",
-    "vite": "^5.4.8",
     "vitest": "^2.1.1"
   }
 }
