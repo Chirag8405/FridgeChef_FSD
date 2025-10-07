@@ -2,6 +2,14 @@
 
 Manual guides for running deployment experiments with this project.
 
+## ✅ Successful Deployments
+
+**Production Deployment**: https://fridge-chef-9yeboj3re-chirags-projects-f5adae37.vercel.app
+
+**CI/CD Status**: ✅ GitHub Actions + Vercel pipeline working
+**Docker Status**: ✅ Multi-container setup ready
+**Database**: ✅ PostgreSQL + Redis containers configured
+
 ## What I'm Testing
 
 **Experiment 1**: Deploy fullstack apps using DevOps tools + Docker. Get the entire stack running in containers locally.

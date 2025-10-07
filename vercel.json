@@ -6,10 +6,6 @@
   "cleanUrls": true,
   "rewrites": [
     {
-      "source": "/api/(.*)",
-      "destination": "/api/serverless.js"
-    },
-    {
       "source": "/((?!api).*)",
       "destination": "/index.html"
     }
@@ -34,7 +30,7 @@
     }
   },
   "functions": {
-    "api/serverless.js": {
+    "api/**/*.js": {
       "maxDuration": 30
     }
   }

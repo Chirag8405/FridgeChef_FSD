@@ -25,7 +25,7 @@ export function createServer() {
   // Middleware
   app.use(cors({
     origin: process.env.NODE_ENV === 'production' 
-      ? ['https://*.netlify.app', 'https://*.netlify.com']
+      ? ['https://*.vercel.app', 'https://*.netlify.app', 'https://*.netlify.com']
       : true,
     credentials: true
   }));
