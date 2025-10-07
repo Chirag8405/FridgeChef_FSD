@@ -1,0 +1,37 @@
+{
+  "version": 2,
+  "name": "fridgechef",
+  "builds": [
+    {
+      "src": "package.json",
+      "use": "@vercel/node",
+      "config": {
+        "includeFiles": ["dist/**"]
+      }
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/dist/server/node-build.mjs"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/dist/spa/index.html"
+    }
+  ],
+  "env": {
+    "NODE_ENV": "production"
+  },
+  "build": {
+    "env": {
+      "NODE_ENV": "production"
+    }
+  },
+  "functions": {
+    "dist/server/node-build.mjs": {
+      "maxDuration": 30
+    }
+  },
+  "outputDirectory": "dist/spa"
+}

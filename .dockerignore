@@ -45,6 +45,8 @@ service
 tests
 fixtures-pages
 fixtures-apps
+EXPERIMENTS.md
+MANUAL_GUIDE.md
 
 # Netlify
 .netlify

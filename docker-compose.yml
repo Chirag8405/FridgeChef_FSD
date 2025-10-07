@@ -1,0 +1,60 @@
+version: '3.8'
+
+services:
+  # Main application service
+  app:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - DATABASE_URL=${DATABASE_URL:-postgresql://localhost:5432/fridgechef}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - JWT_SECRET=${JWT_SECRET:-your-jwt-secret-here}
+    depends_on:
+      - postgres
+    volumes:
+      # Mount for development (optional - remove for pure production)
+      - ./logs:/app/logs
+    restart: unless-stopped
+    networks:
+      - fridgechef-network
+
+  # PostgreSQL database service
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_DB=fridgechef
+      - POSTGRES_USER=fridgechef_user
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-defaultpassword}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    restart: unless-stopped
+    networks:
+      - fridgechef-network
+
+  # Redis for caching (optional)
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    networks:
+      - fridgechef-network
+    command: redis-server --appendonly yes
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  fridgechef-network:
+    driver: bridge

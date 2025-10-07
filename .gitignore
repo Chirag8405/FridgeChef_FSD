@@ -23,7 +23,20 @@ dist-ssr
 *.sln
 *.sw?
 
+# Configuration and environment
 .config/
 .env
 .cursor
+
+# Docker
+.env.local
+.env.production
+
+# Vercel
+.vercel
+
+# Deployment docs (keep local only)
 BACKEND_DEPLOYMENT.md
+
+# Experiment artifacts
+screenshots/

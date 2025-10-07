@@ -1,0 +1,184 @@
+name: Deploy to Vercel
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+jobs:
+  # Job 1: Build and Test
+  build-and-test:
+    name: Build & Test
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js 18
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: TypeScript check
+      run: npm run typecheck
+
+    - name: Run tests
+      run: npm test
+
+    - name: Build application
+      run: npm run build
+      env:
+        NODE_ENV: production
+
+    # Deploy preview
+  deploy-preview:
+    name: Deploy Preview
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    if: github.event_name == 'pull_request'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js 18
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+
+    - name: Install Vercel CLI
+      run: npm install --global vercel@latest
+
+    - name: Pull Vercel environment
+      run: vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
+
+    - name: Build project
+      run: vercel build --token=${{ secrets.VERCEL_TOKEN }}
+
+    - name: Deploy preview
+      id: deploy-preview
+      run: |
+        url=$(vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }})
+        echo "preview-url=$url" >> $GITHUB_OUTPUT
+        echo "Preview URL: $url"
+
+    - name: Comment on PR
+      uses: actions/github-script@v7
+      if: github.event_name == 'pull_request'
+      with:
+        script: |
+          const { data: comments } = await github.rest.issues.listComments({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            issue_number: context.issue.number,
+          });
+          
+          const botComment = comments.find(comment => 
+            comment.user.type === 'Bot' && comment.body.includes('Preview deployment')
+          );
+          
+          const body = `## Preview deployment ready!
+          
+          **Preview URL:** ${{ steps.deploy-preview.outputs.preview-url }}
+          
+          ---
+          *Preview will be deleted when PR is closed.*`;
+          
+          if (botComment) {
+            await github.rest.issues.updateComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              comment_id: botComment.id,
+              body: body
+            });
+          } else {
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: body
+            });
+          }
+
+    # Deploy to production
+  deploy-production:
+    name: Deploy Production
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    
+    environment:
+      name: production-vercel
+      url: ${{ steps.deploy-prod.outputs.production-url }}
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js 18
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+
+    - name: Install Vercel CLI
+      run: npm install --global vercel@latest
+
+    - name: Pull Vercel environment
+      run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+
+    - name: Build project
+      run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+
+    - name: Deploy to production
+      id: deploy-prod
+      run: |
+        url=$(vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }})
+        echo "production-url=$url" >> $GITHUB_OUTPUT
+        echo "Production URL: $url"
+
+    - name: Health check
+      run: |
+        echo "Checking production deployment..."
+        sleep 30
+        
+        for i in {1..5}; do
+          if curl -f "${{ steps.deploy-prod.outputs.production-url }}/api/health"; then
+            echo "Health check passed!"
+            exit 0
+          fi
+          echo "Waiting... ($i/5)"
+          sleep 30
+        done
+        echo "Health check failed, verify manually"
+        exit 1
+
+  # Performance audit
+  lighthouse-audit:
+    name: Performance Audit
+    runs-on: ubuntu-latest
+    needs: deploy-production
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Run Lighthouse
+      uses: treosh/lighthouse-ci-action@v10
+      with:
+        urls: |
+          ${{ needs.deploy-production.outputs.production-url }}
+        uploadArtifacts: true
+        temporaryPublicStorage: true
