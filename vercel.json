@@ -1,15 +1,8 @@
 {
   "version": 2,
   "name": "fridgechef",
-  "builds": [
-    {
-      "src": "package.json",
-      "use": "@vercel/node",
-      "config": {
-        "includeFiles": ["dist/**"]
-      }
-    }
-  ],
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist/spa",
   "routes": [
     {
       "src": "/api/(.*)",
@@ -32,6 +25,5 @@
     "dist/server/node-build.mjs": {
       "maxDuration": 30
     }
-  },
-  "outputDirectory": "dist/spa"
+  }
 }
