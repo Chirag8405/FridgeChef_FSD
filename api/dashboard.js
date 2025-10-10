@@ -6,7 +6,7 @@ const app = createServer();
 
 // Export the handler
 module.exports = (req, res) => {
-  // Set CORS headers
+  // Setting the CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
