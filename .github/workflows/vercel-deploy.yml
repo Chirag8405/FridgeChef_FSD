@@ -172,5 +172,5 @@ jobs:
       uses: treosh/lighthouse-ci-action@v10
       with:
         urls: ${{ needs.deploy-production.outputs.production-url }}
-        uploadArtifacts: true
-        temporaryPublicStorage: true
+        uploadArtifacts: false
+        temporaryPublicStorage: false
