@@ -1,14 +1,9 @@
 // Vercel API route for /api/health
-const { createServer } = require('../dist/server/node-build.js');
 
-// Create the Express app
-const app = createServer();
-
-// Export the handler
+// Vercel API route for /api/health (public health check)
 module.exports = (req, res) => {
-  // Set CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   
   if (req.method === 'OPTIONS') {
@@ -16,10 +11,5 @@ module.exports = (req, res) => {
     return;
   }
 
-  // Create a mock request object that matches Express expectations
-  req.url = '/api/health';
-  req.path = '/api/health';
-  
-  // Use the Express app to handle the request
-  app(req, res);
+  res.status(200).json({ status: "ok" });
 };
