@@ -350,7 +350,7 @@ Important guidelines:
           }
         ],
         temperature: 0.7,
-        max_tokens: 4e3
+        max_tokens: 2500
       });
       const response = completion.choices[0]?.message?.content;
       if (!response) {
