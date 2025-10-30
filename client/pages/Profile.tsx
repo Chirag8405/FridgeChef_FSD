@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface UserProfile {
   name: string;
@@ -26,9 +27,11 @@ interface UserProfile {
 }
 
 export function Profile() {
+  const { user: authUser, isGuest, guestId, updateUser } = useAuth();
+  
   const [profile, setProfile] = useState<UserProfile>({
     name: 'Guest User',
-    email: 'guest@FridgeChef.com',
+    email: 'guest@fridgechef.com',
     preferences: {
       dietary_restrictions: [],
       preferred_cuisines: [],
@@ -51,34 +54,44 @@ export function Profile() {
     
     // Fetch user profile data
     fetchProfile();
-  }, []);
+  }, [authUser, guestId]);
 
   const fetchProfile = async () => {
     try {
+      // Use the authenticated user's ID or guest ID
+      const userId = authUser?.id || guestId || 'guest-user';
+      
+      console.log('Profile page - Auth state:', {
+        authUser: authUser ? { id: authUser.id, name: authUser.name, email: authUser.email } : null,
+        isGuest,
+        guestId,
+        userId
+      });
+      
       const response = await fetch('/api/profile', {
         headers: {
-          'user-id': 'guest-user', // TODO: Replace with actual user ID from auth context
+          'user-id': userId,
         }
       });
 
       const data = await response.json();
+      console.log('Profile API response:', data);
       
       if (data.success && data.user) {
         // Safely merge preferences with defaults to ensure arrays exist
         const userPreferences = data.user.preferences || {};
-        setProfile(prev => ({
-          ...prev,
-          name: data.user.name || prev.name,
-          email: data.user.email || prev.email,
+        setProfile({
+          name: data.user.name || 'Guest User',
+          email: data.user.email || 'guest@fridgechef.com',
           preferences: {
             dietary_restrictions: userPreferences.dietary_restrictions || [],
             preferred_cuisines: userPreferences.preferred_cuisines || [],
-            spice_level: userPreferences.spice_level || prev.preferences.spice_level,
-            cooking_time_preference: userPreferences.cooking_time_preference || prev.preferences.cooking_time_preference,
-            theme: userPreferences.theme || prev.preferences.theme,
-            notifications: userPreferences.notifications !== undefined ? userPreferences.notifications : prev.preferences.notifications,
+            spice_level: userPreferences.spice_level || 'medium',
+            cooking_time_preference: userPreferences.cooking_time_preference || 'medium',
+            theme: userPreferences.theme || 'light',
+            notifications: userPreferences.notifications !== undefined ? userPreferences.notifications : true,
           }
-        }));
+        });
       }
     } catch (error) {
       console.error('Error fetching profile:', error);
@@ -109,11 +122,14 @@ export function Profile() {
 
   const handleSave = async () => {
     try {
+      // Use the authenticated user's ID or guest ID
+      const userId = authUser?.id || guestId || 'guest-user';
+      
       const response = await fetch('/api/profile', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'user-id': 'guest-user', // TODO: Replace with actual user ID from auth context
+          'user-id': userId,
         },
         body: JSON.stringify({
           name: profile.name,
@@ -126,6 +142,15 @@ export function Profile() {
       if (data.success) {
         setSaved(true);
         setEditing(false);
+        
+        // Update the auth context with new user data
+        if (authUser && updateUser) {
+          updateUser({
+            name: profile.name,
+            preferences: profile.preferences
+          });
+        }
+        
         setTimeout(() => setSaved(false), 3000);
       } else {
         console.error('Failed to save profile:', data.message);
