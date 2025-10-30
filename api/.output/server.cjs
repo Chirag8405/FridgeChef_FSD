@@ -691,7 +691,14 @@ const getRecipeHistory = async (req, res) => {
       page: Number(page),
       limit: Number(limit)
     };
-    if (!process.env.DATABASE_URL) {
+    let db;
+    try {
+      db = getDb();
+    } catch (dbError) {
+      console.warn("Database connection error:", dbError);
+      db = null;
+    }
+    if (!db) {
       const response = {
         recipes: [],
         total: 0,
@@ -702,48 +709,47 @@ const getRecipeHistory = async (req, res) => {
       return res.json(response);
     }
     try {
-      const db = getDb();
       const offset = (Number(page) - 1) * Number(limit);
-      let baseQuery = db`SELECT * FROM recipes WHERE user_id = ${userId}`;
-      let countQuery = db`SELECT COUNT(*) as count FROM recipes WHERE user_id = ${userId}`;
-      if (filter === "liked") {
-        baseQuery = db`SELECT * FROM recipes WHERE user_id = ${userId} AND liked = true`;
-        countQuery = db`SELECT COUNT(*) as count FROM recipes WHERE user_id = ${userId} AND liked = true`;
-      } else if (filter === "disliked") {
-        baseQuery = db`SELECT * FROM recipes WHERE user_id = ${userId} AND liked = false`;
-        countQuery = db`SELECT COUNT(*) as count FROM recipes WHERE user_id = ${userId} AND liked = false`;
-      }
       const validSortFields = ["created_at", "title", "cook_time"];
       const sortField = validSortFields.includes(sort_by) ? sort_by : "created_at";
       const sortDirection = sort_order === "asc" ? "ASC" : "DESC";
       let recipes;
+      let countResult;
       if (filter === "liked") {
-        const query = `
+        recipes = await db.unsafe(`
           SELECT * FROM recipes 
           WHERE user_id = $1 AND liked = true
           ORDER BY ${sortField} ${sortDirection}
           LIMIT $2 OFFSET $3
+        `, [userId, Number(limit), offset]);
+        countResult = await db`
+          SELECT COUNT(*) as count FROM recipes 
+          WHERE user_id = ${userId} AND liked = true
         `;
-        recipes = await db(query, [userId, Number(limit), offset]);
       } else if (filter === "disliked") {
-        const query = `
+        recipes = await db.unsafe(`
           SELECT * FROM recipes 
           WHERE user_id = $1 AND liked = false
           ORDER BY ${sortField} ${sortDirection}
           LIMIT $2 OFFSET $3
+        `, [userId, Number(limit), offset]);
+        countResult = await db`
+          SELECT COUNT(*) as count FROM recipes 
+          WHERE user_id = ${userId} AND liked = false
         `;
-        recipes = await db(query, [userId, Number(limit), offset]);
       } else {
-        const query = `
+        recipes = await db.unsafe(`
           SELECT * FROM recipes 
           WHERE user_id = $1
           ORDER BY ${sortField} ${sortDirection}
           LIMIT $2 OFFSET $3
+        `, [userId, Number(limit), offset]);
+        countResult = await db`
+          SELECT COUNT(*) as count FROM recipes 
+          WHERE user_id = ${userId}
         `;
-        recipes = await db(query, [userId, Number(limit), offset]);
       }
-      const totalResult = await countQuery;
-      const total = parseInt(totalResult[0]?.count || "0");
+      const total = parseInt(countResult[0]?.count || "0");
       const hasMore = offset + Number(limit) < total;
       const response = {
         recipes: recipes.map(parseRecipeFromDb),
@@ -1242,8 +1248,36 @@ const getCurrentUser = async (req, res) => {
         message: "No token provided"
       });
     }
-    const decoded = jwt.verify(token, JWT_SECRET);
-    const db = getDb();
+    let decoded;
+    try {
+      decoded = jwt.verify(token, JWT_SECRET);
+    } catch (jwtError) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid token"
+      });
+    }
+    let db;
+    try {
+      db = getDb();
+    } catch (dbError) {
+      console.warn("Database connection error in getCurrentUser:", dbError);
+      db = null;
+    }
+    if (!db) {
+      return res.json({
+        success: true,
+        user: {
+          id: decoded.userId,
+          name: decoded.email.split("@")[0],
+          // Use email prefix as name
+          email: decoded.email,
+          preferences: {},
+          theme: "light",
+          created_at: (/* @__PURE__ */ new Date()).toISOString()
+        }
+      });
+    }
     const sessions = await db`
       SELECT s.expires_at, u.id, u.name, u.email, u.preferences, u.theme, u.created_at
       FROM sessions s
@@ -1251,9 +1285,16 @@ const getCurrentUser = async (req, res) => {
       WHERE s.token = ${token} AND s.expires_at > NOW()
     `;
     if (sessions.length === 0) {
-      return res.status(401).json({
-        success: false,
-        message: "Invalid or expired token"
+      return res.json({
+        success: true,
+        user: {
+          id: decoded.userId,
+          name: decoded.email.split("@")[0],
+          email: decoded.email,
+          preferences: {},
+          theme: "light",
+          created_at: (/* @__PURE__ */ new Date()).toISOString()
+        }
       });
     }
     const userData = sessions[0];

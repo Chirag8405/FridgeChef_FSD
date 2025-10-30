@@ -185,8 +185,16 @@ export const getRecipeHistory: RequestHandler = async (req, res) => {
       limit: Number(limit)
     };
 
+    let db;
+    try {
+      db = sql();
+    } catch (dbError) {
+      console.warn('Database connection error:', dbError);
+      db = null;
+    }
+
     // Return empty result if no database connection
-    if (!process.env.DATABASE_URL) {
+    if (!db) {
       const response: RecipeHistoryResponse = {
         recipes: [],
         total: 0,
@@ -198,57 +206,56 @@ export const getRecipeHistory: RequestHandler = async (req, res) => {
     }
 
     try {
-      const db = sql();
       const offset = (Number(page) - 1) * Number(limit);
-
-      // Build queries using neon's tagged template syntax
-      let baseQuery = db`SELECT * FROM recipes WHERE user_id = ${userId}`;
-      let countQuery = db`SELECT COUNT(*) as count FROM recipes WHERE user_id = ${userId}`;
-
-      // Apply filter
-      if (filter === 'liked') {
-        baseQuery = db`SELECT * FROM recipes WHERE user_id = ${userId} AND liked = true`;
-        countQuery = db`SELECT COUNT(*) as count FROM recipes WHERE user_id = ${userId} AND liked = true`;
-      } else if (filter === 'disliked') {
-        baseQuery = db`SELECT * FROM recipes WHERE user_id = ${userId} AND liked = false`;
-        countQuery = db`SELECT COUNT(*) as count FROM recipes WHERE user_id = ${userId} AND liked = false`;
-      }
-
-      // Get recipes with sorting and pagination
       const validSortFields = ['created_at', 'title', 'cook_time'];
       const sortField = validSortFields.includes(sort_by as string) ? (sort_by as string) : 'created_at';
       const sortDirection = sort_order === 'asc' ? 'ASC' : 'DESC';
 
-      // Build safe SQL queries with validated sort fields and directions
+      // Get recipes with filtering, sorting and pagination
+      // Using template literals with validated fields to prevent SQL injection
       let recipes;
+      let countResult;
+      
       if (filter === 'liked') {
-        const query = `
+        // Use neon's unsafe for dynamic ORDER BY
+        recipes = await (db as any).unsafe(`
           SELECT * FROM recipes 
           WHERE user_id = $1 AND liked = true
           ORDER BY ${sortField} ${sortDirection}
           LIMIT $2 OFFSET $3
+        `, [userId, Number(limit), offset]);
+        
+        countResult = await db`
+          SELECT COUNT(*) as count FROM recipes 
+          WHERE user_id = ${userId} AND liked = true
         `;
-        recipes = await db(query, [userId, Number(limit), offset]);
       } else if (filter === 'disliked') {
-        const query = `
+        recipes = await (db as any).unsafe(`
           SELECT * FROM recipes 
           WHERE user_id = $1 AND liked = false
           ORDER BY ${sortField} ${sortDirection}
           LIMIT $2 OFFSET $3
+        `, [userId, Number(limit), offset]);
+        
+        countResult = await db`
+          SELECT COUNT(*) as count FROM recipes 
+          WHERE user_id = ${userId} AND liked = false
         `;
-        recipes = await db(query, [userId, Number(limit), offset]);
       } else {
-        const query = `
+        recipes = await (db as any).unsafe(`
           SELECT * FROM recipes 
           WHERE user_id = $1
           ORDER BY ${sortField} ${sortDirection}
           LIMIT $2 OFFSET $3
+        `, [userId, Number(limit), offset]);
+        
+        countResult = await db`
+          SELECT COUNT(*) as count FROM recipes 
+          WHERE user_id = ${userId}
         `;
-        recipes = await db(query, [userId, Number(limit), offset]);
       }
 
-      const totalResult = await countQuery;
-      const total = parseInt(totalResult[0]?.count || '0');
+      const total = parseInt(countResult[0]?.count || '0');
       const hasMore = offset + Number(limit) < total;
 
       const response: RecipeHistoryResponse = {
