@@ -4,11 +4,6 @@
   "outputDirectory": "dist/spa",
   "installCommand": "npm install",
   "cleanUrls": true,
-  "functions": {
-    "api/**/*.cjs": {
-      "includeFiles": "dist/serverless/**"
-    }
-  },
   "rewrites": [
     {
       "source": "/api/(.*)",
