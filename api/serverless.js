@@ -7,7 +7,6 @@ let handler;
 try {
   // Load the server build from .output (copied during postbuild)
   const serverPath = path.join(__dirname, '.output/server.cjs');
-  console.log('Loading server from:', serverPath);
   
   const serverModule = require(serverPath);
   
@@ -18,24 +17,27 @@ try {
     throw new Error('Express app not found in server.cjs exports');
   }
   
-  handler = serverless(app);
+  // Create serverless handler
+  handler = serverless(app, {
+    binary: ['image/*', 'application/octet-stream']
+  });
+  
   console.log('✓ Serverless function initialized successfully');
 } catch (error) {
   console.error('✗ Fatal error initializing serverless function:', error);
-  console.error('Error details:', {
-    message: error.message,
-    stack: error.stack,
-    cwd: process.cwd(),
-    dirname: __dirname
-  });
   
   // Export an error handler
-  handler = (req, res) => {
-    res.status(500).json({
-      error: 'Serverless function failed to initialize',
-      message: error.message,
-      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
-    });
+  handler = async (req, res) => {
+    console.error('Error handler called:', error.message);
+    return {
+      statusCode: 500,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        error: 'Serverless function failed to initialize',
+        message: error.message,
+        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      })
+    };
   };
 }
 

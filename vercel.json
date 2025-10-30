@@ -4,11 +4,13 @@
   "outputDirectory": "dist/spa",
   "installCommand": "npm install",
   "cleanUrls": true,
-  "rewrites": [
+  "routes": [
     {
-      "source": "/api/(.*)",
-      "destination": "/api/serverless"
-    },
+      "src": "/api/(.*)",
+      "dest": "/api/serverless"
+    }
+  ],
+  "rewrites": [
     {
       "source": "/(.*)",
       "destination": "/index.html"
