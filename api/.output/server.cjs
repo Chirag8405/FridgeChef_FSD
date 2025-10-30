@@ -738,24 +738,35 @@ const getRecipeHistory = async (req, res) => {
       });
       let recipes;
       let countResult;
-      const orderClause = sortDirection === "ASC" ? `ORDER BY ${sortField} ASC` : `ORDER BY ${sortField} DESC`;
       if (filter === "liked") {
-        const query = `SELECT * FROM recipes WHERE user_id = $1 AND liked = true ${orderClause} LIMIT $2 OFFSET $3`;
-        recipes = await db.unsafe(query, [userId, Number(limit), offset]);
+        recipes = await db`
+          SELECT * FROM recipes 
+          WHERE user_id = ${userId} AND liked = true
+          ORDER BY created_at DESC
+          LIMIT ${Number(limit)} OFFSET ${offset}
+        `;
         countResult = await db`
           SELECT COUNT(*) as count FROM recipes 
           WHERE user_id = ${userId} AND liked = true
         `;
       } else if (filter === "disliked") {
-        const query = `SELECT * FROM recipes WHERE user_id = $1 AND liked = false ${orderClause} LIMIT $2 OFFSET $3`;
-        recipes = await db.unsafe(query, [userId, Number(limit), offset]);
+        recipes = await db`
+          SELECT * FROM recipes 
+          WHERE user_id = ${userId} AND liked = false
+          ORDER BY created_at DESC
+          LIMIT ${Number(limit)} OFFSET ${offset}
+        `;
         countResult = await db`
           SELECT COUNT(*) as count FROM recipes 
           WHERE user_id = ${userId} AND liked = false
         `;
       } else {
-        const query = `SELECT * FROM recipes WHERE user_id = $1 ${orderClause} LIMIT $2 OFFSET $3`;
-        recipes = await db.unsafe(query, [userId, Number(limit), offset]);
+        recipes = await db`
+          SELECT * FROM recipes 
+          WHERE user_id = ${userId}
+          ORDER BY created_at DESC
+          LIMIT ${Number(limit)} OFFSET ${offset}
+        `;
         countResult = await db`
           SELECT COUNT(*) as count FROM recipes 
           WHERE user_id = ${userId}
