@@ -993,10 +993,13 @@ const getDetailedExplanation = async (req, res) => {
     } catch (error) {
       console.warn("Database query failed, continuing without recipe data:", error);
     }
+    if (!recipe && req.body.recipe) {
+      recipe = req.body.recipe;
+    }
     if (!recipe) {
       return res.status(404).json({
         success: false,
-        message: "Recipe not found"
+        message: "Recipe not found. Please provide recipe data in request body or ensure database is configured."
       });
     }
     const explanation = await openAIService.generateDetailedExplanation(recipe);

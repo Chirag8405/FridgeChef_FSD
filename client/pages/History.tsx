@@ -401,6 +401,9 @@ function RecipeDetails({ recipe }: { recipe: Recipe }) {
         headers: {
           'Content-Type': 'application/json',
         },
+        body: JSON.stringify({
+          recipe: recipe  // Send recipe data for guest users without database
+        }),
       });
 
       const data = await response.json();

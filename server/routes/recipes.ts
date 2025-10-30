@@ -600,10 +600,15 @@ export const getDetailedExplanation: RequestHandler = async (req, res) => {
       console.warn('Database query failed, continuing without recipe data:', error);
     }
 
+    // If no database recipe found, try to get from request body (for guest users)
+    if (!recipe && req.body.recipe) {
+      recipe = req.body.recipe;
+    }
+
     if (!recipe) {
       return res.status(404).json({
         success: false,
-        message: 'Recipe not found'
+        message: 'Recipe not found. Please provide recipe data in request body or ensure database is configured.'
       });
     }
 
