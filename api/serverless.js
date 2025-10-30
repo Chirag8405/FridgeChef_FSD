@@ -1,42 +1,40 @@
 // Vercel serverless function entry point
-// Directly creates the Express app without relying on build artifacts
 const serverless = require('serverless-http');
+const path = require('path');
 
-// We need to transpile TypeScript on-the-fly or use the built files
-// Since dist/ is gitignored, we'll require the built production.cjs directly
-// Vercel builds the project, so dist/server/production.cjs should exist
-
-let app;
+let handler;
 
 try {
-  // Try to load the main server build (includes app.listen but we'll extract the app)
-  const serverModule = require('../dist/server/production.cjs');
+  // Load the server build from .output (copied during postbuild)
+  const serverPath = path.join(__dirname, '.output/server.cjs');
+  console.log('Loading server from:', serverPath);
   
-  // The production.cjs exports createServer function
-  if (serverModule.createServer) {
-    app = serverModule.createServer();
+  const serverModule = require(serverPath);
+  
+  if (serverModule.createServer && typeof serverModule.createServer === 'function') {
+    const app = serverModule.createServer();
+    handler = serverless(app);
+    console.log('✓ Serverless function initialized successfully');
   } else {
-    throw new Error('createServer not found in production.cjs');
+    throw new Error('createServer function not found in server.cjs');
   }
-} catch (err) {
-  console.error('Error loading server:', err.message);
+} catch (error) {
+  console.error('✗ Fatal error initializing serverless function:', error);
+  console.error('Error details:', {
+    message: error.message,
+    stack: error.stack,
+    cwd: process.cwd(),
+    dirname: __dirname
+  });
   
-  // Fallback: try to load server files directly and create app
-  try {
-    // This won't work without transpilation, but let's try
-    const { createServer } = require('../server/index.ts');
-    app = createServer();
-  } catch (err2) {
-    console.error('Fallback failed:', err2.message);
-    throw new Error('Could not load server. Ensure build completed successfully.');
-  }
+  // Export an error handler
+  handler = (req, res) => {
+    res.status(500).json({
+      error: 'Serverless function failed to initialize',
+      message: error.message,
+      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
+  };
 }
 
-if (!app) {
-  throw new Error('Failed to create Express app');
-}
-
-console.log('Serverless function initialized successfully');
-
-// Wrap the Express app for serverless deployment
-module.exports = serverless(app);
+module.exports = handler;

@@ -1,0 +1,8 @@
+# Don't ignore dist/server - needed for serverless functions
+!dist/server/**
+
+# Ignore other build artifacts not needed for deployment
+.cache
+node_modules/.cache
+*.log
+.DS_Store

@@ -12,6 +12,9 @@ dist
 dist-ssr
 *.local
 
+# But DO include api/.output (needed for Vercel serverless)
+!api/.output/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
