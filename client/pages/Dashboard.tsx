@@ -22,8 +22,9 @@ export function Dashboard() {
     try {
       setLoading(true);
       
-      // Use local data from context if available
-      if (recipes.length > 0) {
+      // For logged-in users, always fetch from API to get database data
+      // For guests, use local context data if available
+      if (isGuest && recipes.length > 0) {
         const trendingRecipe = likedRecipes.length > 0 
           ? likedRecipes[Math.floor(Math.random() * likedRecipes.length)]
           : null;
@@ -40,13 +41,17 @@ export function Dashboard() {
         return;
       }
 
-      // Fallback to API call
+      // Fetch from API (for logged-in users or when no local data)
+      const userId = user?.id || guestId;
+      console.log('Fetching dashboard data for user:', userId);
+      
       const response = await fetch('/api/dashboard', {
         headers: {
-          'user-id': user?.id || guestId,
+          'user-id': userId,
         },
       });
       const data = await response.json();
+      console.log('Dashboard data received:', data);
       setDashboardData(data);
     } catch (error) {
       console.error('Failed to fetch dashboard data:', error);

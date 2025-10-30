@@ -37,8 +37,11 @@ export function History() {
     try {
       setLoading(true);
       
-      // Use context recipes if available, otherwise try API
-      if (contextRecipes.length > 0) {
+      // For logged-in users, always fetch from API to get database data
+      // For guests, use context recipes if available
+      const isGuest = !user;
+      
+      if (isGuest && contextRecipes.length > 0) {
         let filteredRecipes = [...contextRecipes];
         
         // Apply filter
@@ -78,7 +81,7 @@ export function History() {
         return;
       }
 
-      // Fallback to API
+      // Fetch from API (for logged-in users or when no local data)
       const queryParams = new URLSearchParams({
         filter,
         sort_by: sortBy,
@@ -88,6 +91,8 @@ export function History() {
       });
 
       const userId = user?.id || guestId;
+      console.log('Fetching recipe history for user:', userId, 'filter:', filter);
+      
       const response = await fetch(`/api/recipes/history?${queryParams}`, {
         headers: {
           'user-id': userId,
@@ -96,9 +101,11 @@ export function History() {
 
       if (response.ok) {
         const data: RecipeHistoryResponse = await response.json();
+        console.log('Recipe history data received:', data);
         setRecipes(data.recipes);
         setTotalRecipes(data.total);
       } else {
+        console.error('Recipe history fetch failed with status:', response.status);
         // No demo data fallback - just show empty state
         setRecipes([]);
         setTotalRecipes(0);
