@@ -582,6 +582,7 @@ const generateRecipes = async (req, res) => {
     try {
       const db = getDb();
       if (process.env.DATABASE_URL) {
+        console.log(`Saving ${recipes.length} recipes to database for user ${userId}`);
         for (const recipe of recipes) {
           await db`
             INSERT INTO recipes (
@@ -600,9 +601,12 @@ const generateRecipes = async (req, res) => {
               instructions = EXCLUDED.instructions
           `;
         }
+        console.log(`✓ Successfully saved ${recipes.length} recipes to database`);
+      } else {
+        console.log("No DATABASE_URL, skipping database save");
       }
     } catch (dbError) {
-      console.warn("Database save failed, continuing without persistence:", dbError);
+      console.error("✗ Database save failed:", dbError);
     }
     const response = {
       recipes,

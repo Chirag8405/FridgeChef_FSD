@@ -27,19 +27,11 @@ export function History() {
   const recipeDetailsRef = useRef<HTMLDivElement>(null);
 
   const { user, guestId } = useAuth();
-  const { recipes: contextRecipes, likeRecipe, syncWithDatabase } = useRecipes();
-
-  // Sync with database when user logs in
-  useEffect(() => {
-    if (user && user.id) {
-      console.log('User logged in, syncing recipes with database for user:', user.id);
-      syncWithDatabase(user.id);
-    }
-  }, [user?.id]);
+  const { recipes: contextRecipes, likeRecipe } = useRecipes();
 
   useEffect(() => {
     fetchRecipeHistory();
-  }, [filter, sortBy, sortOrder, user, guestId]);
+  }, [filter, sortBy, sortOrder, user?.id, guestId]);
 
   const fetchRecipeHistory = async () => {
     try {
