@@ -428,7 +428,7 @@ Important guidelines:
       return this.getMockDetailedExplanation(recipe);
     }
     try {
-      const prompt = `Act as a professional chef providing detailed, in-depth cooking guidance.
+      const prompt = `Act as a professional chef providing clear, step-by-step cooking instructions.
 
 Recipe: ${recipe.title}
 Description: ${recipe.description}
@@ -440,24 +440,28 @@ ${recipe.ingredients.map((ing) => `- ${ing.amount} ${ing.unit || ""} ${ing.name}
 Basic Instructions:
 ${recipe.instructions.map((step, i) => `${i + 1}. ${step}`).join("\n")}
 
-Please provide a comprehensive, detailed explanation of how to prepare this recipe. Include:
+Provide a detailed, straightforward cooking guide with clear numbered steps. For each major step, explain:
+- Exactly what to do
+- What to look for (visual cues, textures, aromas)
+- Why it matters
+- Specific timing
 
-1. **Preparation Tips**: How to properly prep each ingredient, any advance preparation needed
-2. **Cooking Techniques**: Detailed explanation of each cooking method used (sautéing, boiling, etc.)
-3. **Visual and Sensory Cues**: What to look for at each stage (color changes, textures, aromas, sounds)
-4. **Timing Details**: More specific timing for each step and why it matters
-5. **Common Mistakes**: What to avoid and troubleshooting tips
-6. **Pro Tips**: Professional chef secrets to elevate the dish
-7. **Variations**: Possible substitutions or modifications
-8. **Serving Suggestions**: How to plate and what to serve with
+Also include:
+- **Preparation**: What to prep before cooking
+- **Pro Tips**: Quick professional tips to improve the dish
+- **Common Mistakes**: What to avoid
 
-Write in a friendly, conversational tone as if you're teaching someone in your kitchen. Be thorough but not overwhelming. Aim for about 400-500 words.`;
+Format using markdown:
+- Use **bold** for section headers
+- Use numbered lists for steps
+- Keep instructions direct and actionable
+- Write 300-400 words total`;
       const completion = await openai.chat.completions.create({
         model: "gpt-4o-mini",
         messages: [
           {
             role: "system",
-            content: "You are an experienced professional chef who loves teaching others. You provide detailed, helpful cooking guidance with enthusiasm and clarity."
+            content: "You are an experienced chef providing clear, direct cooking instructions. Use markdown formatting with **bold** for emphasis. Be concise and actionable."
           },
           {
             role: "user",
@@ -465,7 +469,7 @@ Write in a friendly, conversational tone as if you're teaching someone in your k
           }
         ],
         temperature: 0.7,
-        max_tokens: 1500
+        max_tokens: 1200
       });
       return completion.choices[0]?.message?.content || this.getMockDetailedExplanation(recipe);
     } catch (error) {
@@ -474,29 +478,30 @@ Write in a friendly, conversational tone as if you're teaching someone in your k
     }
   }
   getMockDetailedExplanation(recipe) {
-    return `**Preparation Tips:**
-Start by organizing your ingredients - this is called "mise en place" in professional kitchens. ${recipe.ingredients.slice(0, 3).map((ing) => `Prep your ${ing.name}`).join(", ")} before you begin cooking. This ensures smooth execution.
+    return `**Preparation**
 
-**Cooking Techniques:**
-This ${recipe.difficulty} recipe uses fundamental cooking methods. Pay attention to heat levels - ${recipe.difficulty === "easy" ? "medium heat works well for most steps" : recipe.difficulty === "medium" ? "you'll want to adjust between medium and high heat" : "precise temperature control is crucial here"}. 
+1. Organize all ingredients before starting (mise en place)
+2. ${recipe.ingredients.slice(0, 3).map((ing) => `Prep your ${ing.name}`).join(", ")}
+3. Have all cooking tools ready
 
-**Visual and Sensory Cues:**
-Watch for golden-brown colors when sautéing, listen for the sizzle (it should be steady, not frantic), and trust your nose - aromatic ingredients release their full fragrance when cooked properly.
+**Detailed Cooking Steps**
 
-**Timing Details:**
-The ${recipe.prep_time} minute prep time accounts for chopping and measuring. The ${recipe.cook_time} minute cook time can vary by 5-10 minutes depending on your equipment and ingredient sizes.
+${recipe.instructions.map((step, i) => `${i + 1}. ${step}
+   - Look for: ${i === 0 ? "proper heat level established" : i === recipe.instructions.length - 1 ? "final texture and color" : "visual changes and aromas"}
+   - Timing: ${Math.round(recipe.cook_time / recipe.instructions.length)} minutes
+   - Why: ${i === 0 ? "Foundation for the dish" : i === recipe.instructions.length - 1 ? "Final flavor development" : "Building layers of flavor"}`).join("\n\n")}
 
-**Common Mistakes to Avoid:**
-Don't overcrowd the pan - this causes steaming instead of browning. Don't rush the process - patience yields better flavors. Taste and adjust seasoning throughout.
+**Pro Tips**
+- Season in layers throughout cooking for better flavor
+- ${recipe.difficulty === "easy" ? "Use medium heat to avoid burning" : recipe.difficulty === "medium" ? "Adjust heat as needed for proper browning" : "Precise temperature control is key"}
+- Taste and adjust before serving
 
-**Pro Tips:**
-Season in layers rather than all at once. Room temperature ingredients cook more evenly. Let the dish rest for a few minutes before serving to allow flavors to meld.
+**Common Mistakes to Avoid**
+- Don't overcrowd the pan (causes steaming instead of browning)
+- Don't rush - let each step complete properly
+- Don't forget to season throughout, not just at the end
 
-**Variations:**
-Feel free to substitute ingredients based on what you have. The techniques remain the same, so don't be afraid to experiment while maintaining the basic cooking methods.
-
-**Serving Suggestions:**
-This dish serves ${recipe.servings} and pairs wonderfully with a fresh salad or crusty bread. Consider garnishing with fresh herbs for a professional presentation.`;
+This ${recipe.difficulty} recipe serves ${recipe.servings} and takes ${recipe.prep_time + recipe.cook_time} minutes total.`;
   }
 }
 const openAIService = new OpenAIService();

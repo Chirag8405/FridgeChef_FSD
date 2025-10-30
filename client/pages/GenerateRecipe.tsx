@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRecipes } from '@/contexts/RecipeContext';
+import ReactMarkdown from 'react-markdown';
 
 export function GenerateRecipe() {
   const [ingredients, setIngredients] = useState<string[]>([]);
@@ -469,10 +470,18 @@ function RecipeDetails({
               <BookOpen className="h-5 w-5 text-blue-600 dark:text-blue-400" />
               <h5 className="font-semibold text-blue-900 dark:text-blue-100">Detailed Cooking Guide</h5>
             </div>
-            <div className="prose prose-sm dark:prose-invert max-w-none">
-              <p className="text-sm text-blue-900 dark:text-blue-100 whitespace-pre-wrap leading-relaxed">
+            <div className="prose prose-sm dark:prose-invert max-w-none text-blue-900 dark:text-blue-100">
+              <ReactMarkdown
+                components={{
+                  strong: ({ children }) => <strong className="font-bold text-blue-900 dark:text-blue-100">{children}</strong>,
+                  p: ({ children }) => <p className="mb-3 leading-relaxed">{children}</p>,
+                  ol: ({ children }) => <ol className="list-decimal list-inside space-y-2 mb-3">{children}</ol>,
+                  ul: ({ children }) => <ul className="list-disc list-inside space-y-1 mb-3">{children}</ul>,
+                  li: ({ children }) => <li className="ml-2">{children}</li>,
+                }}
+              >
                 {detailedExplanation}
-              </p>
+              </ReactMarkdown>
             </div>
           </div>
         )}
