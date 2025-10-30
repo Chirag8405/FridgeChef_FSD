@@ -79,3 +79,41 @@ export const readinessCheck: RequestHandler = async (req, res) => {
     });
   }
 };
+
+export const testDbConnection: RequestHandler = async (req, res) => {
+  const dbInfo: any = {
+    timestamp: new Date().toISOString(),
+    hasDbUrl: !!process.env.DATABASE_URL,
+    hasOpenAI: !!process.env.OPENAI_API_KEY,
+    hasJWT: !!process.env.JWT_SECRET,
+  };
+
+  if (process.env.DATABASE_URL) {
+    // Mask the password in the URL
+    const url = process.env.DATABASE_URL;
+    const urlParts = url.split('@');
+    const hostPart = urlParts.length > 1 ? urlParts[1].split('/')[0] : 'unknown';
+    dbInfo.dbHost = hostPart;
+    dbInfo.dbUrlLength = url.length;
+    
+    try {
+      const db = sql();
+      if (!db) {
+        dbInfo.status = 'getDb returned null';
+      } else {
+        const result = await db`SELECT NOW() as current_time, version() as pg_version`;
+        dbInfo.status = 'connected';
+        dbInfo.currentTime = result[0]?.current_time;
+        dbInfo.pgVersion = result[0]?.pg_version;
+      }
+    } catch (error: any) {
+      dbInfo.status = 'error';
+      dbInfo.error = error.message;
+      dbInfo.errorType = error.constructor.name;
+    }
+  } else {
+    dbInfo.status = 'no_database_url';
+  }
+
+  res.json(dbInfo);
+};

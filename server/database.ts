@@ -7,12 +7,20 @@ export const getDb = (): NeonQueryFunction<false, false> | null => {
   if (!sql) {
     const databaseUrl = process.env.DATABASE_URL;
     if (!databaseUrl) {
-      console.warn('DATABASE_URL not set, database operations will be disabled');
+      console.warn('⚠️  DATABASE_URL not set, database operations will be disabled');
+      console.log('Available env vars:', Object.keys(process.env).filter(k => k.includes('DATABASE') || k.includes('DB')));
       // Return null when no database is configured
       return null;
     }
     
     try {
+      // Log partial connection string for debugging (hide password)
+      const urlParts = databaseUrl.split('@');
+      const maskedUrl = urlParts.length > 1 
+        ? `${urlParts[0].split(':')[0]}:****@${urlParts[1]}` 
+        : '****';
+      console.log('🔌 Attempting database connection to:', maskedUrl);
+      
       sql = neon(databaseUrl);
       console.log('✅ Database connection established successfully');
     } catch (error) {
@@ -46,14 +54,22 @@ export const getDbWithRetry = async (maxRetries = 3): Promise<NeonQueryFunction<
 // Database schema initialization
 export const initializeDatabase = async () => {
   try {
-    const sql = getDb();
+    console.log('🔄 Starting database initialization...');
     
     if (!process.env.DATABASE_URL) {
       console.log('⚠️  Skipping database initialization - no DATABASE_URL configured');
+      console.log('Set DATABASE_URL environment variable to enable database features');
       return;
     }
 
-    console.log('🔄 Initializing database schema...');
+    const sql = getDb();
+    
+    if (!sql) {
+      console.log('⚠️  Database connection is null, skipping initialization');
+      return;
+    }
+
+    console.log('🔄 Creating database schema...');
     
     // Create users table
     await sql`

@@ -12,10 +12,14 @@ const getDb = () => {
   if (!sql) {
     const databaseUrl = process.env.DATABASE_URL;
     if (!databaseUrl) {
-      console.warn("DATABASE_URL not set, database operations will be disabled");
+      console.warn("⚠️  DATABASE_URL not set, database operations will be disabled");
+      console.log("Available env vars:", Object.keys(process.env).filter((k) => k.includes("DATABASE") || k.includes("DB")));
       return null;
     }
     try {
+      const urlParts = databaseUrl.split("@");
+      const maskedUrl = urlParts.length > 1 ? `${urlParts[0].split(":")[0]}:****@${urlParts[1]}` : "****";
+      console.log("🔌 Attempting database connection to:", maskedUrl);
       sql = serverless.neon(databaseUrl);
       console.log("✅ Database connection established successfully");
     } catch (error) {
@@ -27,12 +31,18 @@ const getDb = () => {
 };
 const initializeDatabase = async () => {
   try {
-    const sql2 = getDb();
+    console.log("🔄 Starting database initialization...");
     if (!process.env.DATABASE_URL) {
       console.log("⚠️  Skipping database initialization - no DATABASE_URL configured");
+      console.log("Set DATABASE_URL environment variable to enable database features");
       return;
     }
-    console.log("🔄 Initializing database schema...");
+    const sql2 = getDb();
+    if (!sql2) {
+      console.log("⚠️  Database connection is null, skipping initialization");
+      return;
+    }
+    console.log("🔄 Creating database schema...");
     await sql2`
       CREATE TABLE IF NOT EXISTS users (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -183,6 +193,39 @@ const readinessCheck = async (req, res) => {
       error: "Readiness check failed"
     });
   }
+};
+const testDbConnection = async (req, res) => {
+  const dbInfo = {
+    timestamp: (/* @__PURE__ */ new Date()).toISOString(),
+    hasDbUrl: !!process.env.DATABASE_URL,
+    hasOpenAI: !!process.env.OPENAI_API_KEY,
+    hasJWT: !!process.env.JWT_SECRET
+  };
+  if (process.env.DATABASE_URL) {
+    const url = process.env.DATABASE_URL;
+    const urlParts = url.split("@");
+    const hostPart = urlParts.length > 1 ? urlParts[1].split("/")[0] : "unknown";
+    dbInfo.dbHost = hostPart;
+    dbInfo.dbUrlLength = url.length;
+    try {
+      const db = getDb();
+      if (!db) {
+        dbInfo.status = "getDb returned null";
+      } else {
+        const result = await db`SELECT NOW() as current_time, version() as pg_version`;
+        dbInfo.status = "connected";
+        dbInfo.currentTime = result[0]?.current_time;
+        dbInfo.pgVersion = result[0]?.pg_version;
+      }
+    } catch (error) {
+      dbInfo.status = "error";
+      dbInfo.error = error.message;
+      dbInfo.errorType = error.constructor.name;
+    }
+  } else {
+    dbInfo.status = "no_database_url";
+  }
+  res.json(dbInfo);
 };
 const openai = process.env.OPENAI_API_KEY ? new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
@@ -1437,6 +1480,7 @@ function createServer() {
   app2.use(express.urlencoded({ extended: true, limit: "10mb" }));
   app2.get("/api/health", healthCheck);
   app2.get("/api/ready", readinessCheck);
+  app2.get("/api/test-db", testDbConnection);
   app2.get("/api/ping", (req, res) => {
     res.json({
       message: "FridgeChef API is running!",
@@ -1476,6 +1520,17 @@ function createServer() {
   });
   return app2;
 }
+console.log("🚀 Serverless function initializing...");
+console.log("Environment check:", {
+  hasDbUrl: !!process.env.DATABASE_URL,
+  hasOpenAI: !!process.env.OPENAI_API_KEY,
+  hasJWT: !!process.env.JWT_SECRET,
+  nodeEnv: "production"
+});
+initializeDatabase().catch((err) => {
+  console.warn("⚠️  Database initialization failed in serverless mode:", err.message);
+  console.log("Continuing without database - using guest mode");
+});
 const app = createServer();
 exports.app = app;
 exports.createServer = createServer;

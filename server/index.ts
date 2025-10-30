@@ -1,7 +1,7 @@
 import express from "express";
 import cors from "cors";
 import { initializeDatabase } from "./database";
-import { healthCheck, readinessCheck } from "./routes/health";
+import { healthCheck, readinessCheck, testDbConnection } from "./routes/health";
 import { 
   generateRecipes, 
   getDashboardData, 
@@ -38,6 +38,7 @@ export function createServer() {
   // Health endpoints
   app.get("/api/health", healthCheck);
   app.get("/api/ready", readinessCheck);
+  app.get("/api/test-db", testDbConnection);
 
   // API endpoints
   app.get("/api/ping", (req, res) => {
