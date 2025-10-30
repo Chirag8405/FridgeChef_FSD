@@ -29,11 +29,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const savedToken = localStorage.getItem('FridgeChef_token');
     const savedUser = localStorage.getItem('FridgeChef_user');
     
+    console.log('AuthProvider initializing:', {
+      hasToken: !!savedToken,
+      hasUser: !!savedUser
+    });
+    
     if (savedToken && savedUser) {
       try {
         const userData = JSON.parse(savedUser);
         setUser(userData);
         setToken(savedToken);
+        console.log('✓ Restored user session:', userData.email);
         
         // Apply theme
         if (userData.theme === 'dark') {
@@ -43,10 +49,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Verify token is still valid
         verifyToken(savedToken);
       } catch (error) {
-        console.error('Error parsing saved user data:', error);
+        console.error('✗ Error parsing saved user data:', error);
         localStorage.removeItem('FridgeChef_user');
         localStorage.removeItem('FridgeChef_token');
       }
+    } else {
+      console.log('No saved session found');
     }
     
     // Generate or get guest ID for anonymous users
@@ -62,6 +70,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const verifyToken = async (authToken: string) => {
     try {
+      console.log('Verifying token...');
       const response = await fetch(`${API_BASE}/auth/me`, {
         headers: {
           'Authorization': `Bearer ${authToken}`,
@@ -70,13 +79,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
       
       if (!response.ok) {
-        console.warn('Token verification returned error status:', response.status);
+        console.warn('✗ Token verification failed with status:', response.status);
         // Don't clear token on verification failure - keep user logged in with cached data
         return;
       }
       
       const data = await response.json();
       if (data.success && data.user) {
+        console.log('✓ Token verified successfully');
         // Update user data from server
         setUser(data.user);
         localStorage.setItem('FridgeChef_user', JSON.stringify(data.user));
@@ -86,7 +96,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       }
     } catch (error) {
-      console.warn('Token verification failed, keeping cached user:', error);
+      console.warn('✗ Token verification network error:', error);
       // Don't clear on network errors - keep user logged in with cached data
     }
   };
