@@ -1,7 +1,5 @@
 "use strict";
 Object.defineProperty(exports, Symbol.toStringTag, { value: "Module" });
-const path = require("path");
-const url = require("url");
 const express = require("express");
 const cors = require("cors");
 const serverless = require("@neondatabase/serverless");
@@ -9,24 +7,6 @@ const OpenAI = require("openai");
 const uuid = require("uuid");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
-var _documentCurrentScript = typeof document !== "undefined" ? document.currentScript : null;
-function _interopNamespaceDefault(e) {
-  const n = Object.create(null, { [Symbol.toStringTag]: { value: "Module" } });
-  if (e) {
-    for (const k in e) {
-      if (k !== "default") {
-        const d = Object.getOwnPropertyDescriptor(e, k);
-        Object.defineProperty(n, k, d.get ? d : {
-          enumerable: true,
-          get: () => e[k]
-        });
-      }
-    }
-  }
-  n.default = e;
-  return Object.freeze(n);
-}
-const express__namespace = /* @__PURE__ */ _interopNamespaceDefault(express);
 let sql = null;
 const getDb = () => {
   if (!sql) {
@@ -1414,36 +1394,6 @@ function createServer() {
   return app2;
 }
 const app = createServer();
-const port = process.env.PORT || 3e3;
-let __dirname$1;
-if (typeof __dirname$1 === "undefined") {
-  __dirname$1 = path.dirname(url.fileURLToPath(typeof document === "undefined" ? require("url").pathToFileURL(__filename).href : _documentCurrentScript && _documentCurrentScript.tagName.toUpperCase() === "SCRIPT" && _documentCurrentScript.src || new URL("production.cjs", document.baseURI).href));
-}
-const distPath = path.join(__dirname$1, "../spa");
-app.use(express__namespace.static(distPath));
-app.get("*", (req, res) => {
-  if (req.path.startsWith("/api/")) {
-    return res.status(404).json({
-      success: false,
-      message: "API endpoint not found",
-      path: req.path,
-      timestamp: (/* @__PURE__ */ new Date()).toISOString()
-    });
-  }
-  res.sendFile(path.join(distPath, "index.html"));
-});
-app.listen(port, () => {
-  console.log(`🚀 Fusion Starter server running on port ${port}`);
-  console.log(`📱 Frontend: http://localhost:${port}`);
-  console.log(`🔧 API: http://localhost:${port}/api`);
-});
-process.on("SIGTERM", () => {
-  console.log("🛑 Received SIGTERM, shutting down gracefully");
-  process.exit(0);
-});
-process.on("SIGINT", () => {
-  console.log("🛑 Received SIGINT, shutting down gracefully");
-  process.exit(0);
-});
+exports.app = app;
 exports.createServer = createServer;
-//# sourceMappingURL=production.cjs.map
+//# sourceMappingURL=serverless.cjs.map
