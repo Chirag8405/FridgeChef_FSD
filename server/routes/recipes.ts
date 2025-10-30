@@ -204,13 +204,15 @@ export const getRecipeHistory: RequestHandler = async (req, res) => {
     let db;
     try {
       db = sql();
+      console.log('Database connection acquired:', !!db);
     } catch (dbError) {
-      console.warn('Database connection error:', dbError);
+      console.error('Database connection error in getRecipeHistory:', dbError);
       db = null;
     }
 
     // Return empty result if no database connection
     if (!db) {
+      console.error('No database connection available, returning empty results');
       const response: RecipeHistoryResponse = {
         recipes: [],
         total: 0,
