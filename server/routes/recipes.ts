@@ -98,8 +98,16 @@ export const getDashboardData: RequestHandler = async (req, res) => {
   try {
     const userId = req.headers['user-id'] as string || `guest-${Date.now()}`;
 
+    let db;
+    try {
+      db = sql();
+    } catch (dbError) {
+      console.warn('Database connection error:', dbError);
+      db = null;
+    }
+
     // Return empty dashboard data if no database connection
-    if (!process.env.DATABASE_URL) {
+    if (!db) {
       const dashboardData: DashboardData = {
         trending_recipe: null,
         top_liked_recipes: [],
@@ -110,8 +118,6 @@ export const getDashboardData: RequestHandler = async (req, res) => {
     }
 
     try {
-      const db = sql();
-
       // Get random trending recipe from liked recipes
       const trendingRecipeResult = await db`
         SELECT * FROM recipes 
@@ -144,9 +150,15 @@ export const getDashboardData: RequestHandler = async (req, res) => {
         total_liked: parseInt(totalLikedResult[0].count)
       };
 
+      console.log(`Dashboard data for user ${userId}:`, {
+        total_recipes: dashboardData.total_recipes,
+        total_liked: dashboardData.total_liked,
+        trending_recipe: dashboardData.trending_recipe?.title || 'none'
+      });
+
       res.json(dashboardData);
     } catch (dbError) {
-      console.warn('Database query failed:', dbError);
+      console.error('Database query failed:', dbError);
       // Return empty data on database error
       const dashboardData: DashboardData = {
         trending_recipe: null,
@@ -258,6 +270,13 @@ export const getRecipeHistory: RequestHandler = async (req, res) => {
       const total = parseInt(countResult[0]?.count || '0');
       const hasMore = offset + Number(limit) < total;
 
+      console.log(`Recipe history for user ${userId}:`, {
+        filter,
+        total,
+        returned: recipes.length,
+        page: Number(page)
+      });
+
       const response: RecipeHistoryResponse = {
         recipes: recipes.map(parseRecipeFromDb),
         total,
@@ -268,7 +287,7 @@ export const getRecipeHistory: RequestHandler = async (req, res) => {
 
       res.json(response);
     } catch (dbError) {
-      console.warn('Database query failed:', dbError);
+      console.error('Database query failed:', dbError);
       // Return empty result on database error
       const response: RecipeHistoryResponse = {
         recipes: [],

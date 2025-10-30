@@ -620,7 +620,14 @@ const generateRecipes = async (req, res) => {
 const getDashboardData = async (req, res) => {
   try {
     const userId = req.headers["user-id"] || `guest-${Date.now()}`;
-    if (!process.env.DATABASE_URL) {
+    let db;
+    try {
+      db = getDb();
+    } catch (dbError) {
+      console.warn("Database connection error:", dbError);
+      db = null;
+    }
+    if (!db) {
       const dashboardData = {
         trending_recipe: null,
         top_liked_recipes: [],
@@ -630,7 +637,6 @@ const getDashboardData = async (req, res) => {
       return res.json(dashboardData);
     }
     try {
-      const db = getDb();
       const trendingRecipeResult = await db`
         SELECT * FROM recipes 
         WHERE user_id = ${userId} AND liked = true 
@@ -655,9 +661,14 @@ const getDashboardData = async (req, res) => {
         total_recipes: parseInt(totalRecipesResult[0].count),
         total_liked: parseInt(totalLikedResult[0].count)
       };
+      console.log(`Dashboard data for user ${userId}:`, {
+        total_recipes: dashboardData.total_recipes,
+        total_liked: dashboardData.total_liked,
+        trending_recipe: dashboardData.trending_recipe?.title || "none"
+      });
       res.json(dashboardData);
     } catch (dbError) {
-      console.warn("Database query failed:", dbError);
+      console.error("Database query failed:", dbError);
       const dashboardData = {
         trending_recipe: null,
         top_liked_recipes: [],
@@ -751,6 +762,12 @@ const getRecipeHistory = async (req, res) => {
       }
       const total = parseInt(countResult[0]?.count || "0");
       const hasMore = offset + Number(limit) < total;
+      console.log(`Recipe history for user ${userId}:`, {
+        filter,
+        total,
+        returned: recipes.length,
+        page: Number(page)
+      });
       const response = {
         recipes: recipes.map(parseRecipeFromDb),
         total,
@@ -760,7 +777,7 @@ const getRecipeHistory = async (req, res) => {
       };
       res.json(response);
     } catch (dbError) {
-      console.warn("Database query failed:", dbError);
+      console.error("Database query failed:", dbError);
       const response = {
         recipes: [],
         total: 0,

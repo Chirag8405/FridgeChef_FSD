@@ -70,25 +70,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
       
       if (!response.ok) {
-        throw new Error('Token verification failed');
+        console.warn('Token verification returned error status:', response.status);
+        // Don't clear token on verification failure - keep user logged in with cached data
+        return;
       }
       
       const data = await response.json();
       if (data.success && data.user) {
+        // Update user data from server
         setUser(data.user);
+        localStorage.setItem('FridgeChef_user', JSON.stringify(data.user));
+        
         if (data.user.theme === 'dark') {
           document.documentElement.classList.add('dark');
         }
-      } else {
-        throw new Error('Invalid token response');
       }
     } catch (error) {
-      console.error('Token verification failed:', error);
-      // Clear invalid token
-      localStorage.removeItem('FridgeChef_token');
-      localStorage.removeItem('FridgeChef_user');
-      setToken(null);
-      setUser(null);
+      console.warn('Token verification failed, keeping cached user:', error);
+      // Don't clear on network errors - keep user logged in with cached data
     }
   };
 
