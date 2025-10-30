@@ -4,6 +4,10 @@ import { createServer } from "./index";
 import * as express from "express";
 
 const app = createServer();
+
+// Export the app for serverless deployments
+export { createServer };
+
 const port = process.env.PORT || 3000;
 
 // In production, serve the built SPA files

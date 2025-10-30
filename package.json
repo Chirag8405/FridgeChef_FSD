@@ -12,9 +12,10 @@
   },
   "scripts": {
     "dev": "npx vite",
-    "build": "npm run build:client && npm run build:server",
+    "build": "npm run build:client && npm run build:server && npm run build:serverless",
     "build:client": "npx vite build",
     "build:server": "npx vite build --config vite.config.server.ts",
+    "build:serverless": "npx vite build --config vite.config.serverless.ts",
     "start": "node dist/server/production.cjs",
     "test": "npx vitest --run",
     "format.fix": "prettier --write .",
