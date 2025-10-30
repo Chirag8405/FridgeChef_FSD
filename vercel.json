@@ -7,7 +7,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "/api/serverless"
+      "destination": "/api/serverless-direct"
     },
     {
       "source": "/(.*)",
