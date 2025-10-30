@@ -728,42 +728,43 @@ const getRecipeHistory = async (req, res) => {
       const validSortFields = ["created_at", "title", "cook_time"];
       const sortField = validSortFields.includes(sort_by) ? sort_by : "created_at";
       const sortDirection = sort_order === "asc" ? "ASC" : "DESC";
+      console.log("Recipe history query params:", {
+        userId,
+        filter,
+        sortField,
+        sortDirection,
+        limit: Number(limit),
+        offset
+      });
       let recipes;
       let countResult;
+      const orderClause = sortDirection === "ASC" ? `ORDER BY ${sortField} ASC` : `ORDER BY ${sortField} DESC`;
       if (filter === "liked") {
-        recipes = await db.unsafe(`
-          SELECT * FROM recipes 
-          WHERE user_id = $1 AND liked = true
-          ORDER BY ${sortField} ${sortDirection}
-          LIMIT $2 OFFSET $3
-        `, [userId, Number(limit), offset]);
+        const query = `SELECT * FROM recipes WHERE user_id = $1 AND liked = true ${orderClause} LIMIT $2 OFFSET $3`;
+        recipes = await db.unsafe(query, [userId, Number(limit), offset]);
         countResult = await db`
           SELECT COUNT(*) as count FROM recipes 
           WHERE user_id = ${userId} AND liked = true
         `;
       } else if (filter === "disliked") {
-        recipes = await db.unsafe(`
-          SELECT * FROM recipes 
-          WHERE user_id = $1 AND liked = false
-          ORDER BY ${sortField} ${sortDirection}
-          LIMIT $2 OFFSET $3
-        `, [userId, Number(limit), offset]);
+        const query = `SELECT * FROM recipes WHERE user_id = $1 AND liked = false ${orderClause} LIMIT $2 OFFSET $3`;
+        recipes = await db.unsafe(query, [userId, Number(limit), offset]);
         countResult = await db`
           SELECT COUNT(*) as count FROM recipes 
           WHERE user_id = ${userId} AND liked = false
         `;
       } else {
-        recipes = await db.unsafe(`
-          SELECT * FROM recipes 
-          WHERE user_id = $1
-          ORDER BY ${sortField} ${sortDirection}
-          LIMIT $2 OFFSET $3
-        `, [userId, Number(limit), offset]);
+        const query = `SELECT * FROM recipes WHERE user_id = $1 ${orderClause} LIMIT $2 OFFSET $3`;
+        recipes = await db.unsafe(query, [userId, Number(limit), offset]);
         countResult = await db`
           SELECT COUNT(*) as count FROM recipes 
           WHERE user_id = ${userId}
         `;
       }
+      console.log("Recipe history raw results:", {
+        recipesCount: recipes?.length,
+        countResult: countResult[0]
+      });
       const total = parseInt(countResult[0]?.count || "0");
       const hasMore = offset + Number(limit) < total;
       console.log(`Recipe history for user ${userId}:`, {
