@@ -101,17 +101,21 @@ export const generateRecipes: RequestHandler = async (req, res) => {
 export const getDashboardData: RequestHandler = async (req, res) => {
   try {
     const userId = req.headers['user-id'] as string || `guest-${Date.now()}`;
+    console.log('=== getDashboardData START ===');
+    console.log('User ID:', userId);
 
     let db;
     try {
       db = sql();
+      console.log('Database connection acquired:', !!db);
     } catch (dbError) {
-      console.warn('Database connection error:', dbError);
+      console.error('Database connection error in getDashboardData:', dbError);
       db = null;
     }
 
     // Return empty dashboard data if no database connection
     if (!db) {
+      console.error('No database connection, returning empty dashboard');
       const dashboardData: DashboardData = {
         trending_recipe: null,
         top_liked_recipes: [],
@@ -122,6 +126,19 @@ export const getDashboardData: RequestHandler = async (req, res) => {
     }
 
     try {
+      console.log('Executing dashboard queries...');
+      
+      // Get total counts
+      const totalRecipesResult = await db`
+        SELECT COUNT(*) as count FROM recipes WHERE user_id = ${userId}
+      `;
+      console.log('Total recipes query result:', totalRecipesResult);
+
+      const totalLikedResult = await db`
+        SELECT COUNT(*) as count FROM recipes WHERE user_id = ${userId} AND liked = true
+      `;
+      console.log('Total liked query result:', totalLikedResult);
+
       // Get random trending recipe from liked recipes
       const trendingRecipeResult = await db`
         SELECT * FROM recipes 
@@ -138,15 +155,6 @@ export const getDashboardData: RequestHandler = async (req, res) => {
         LIMIT 5
       `;
 
-      // Get total counts
-      const totalRecipesResult = await db`
-        SELECT COUNT(*) as count FROM recipes WHERE user_id = ${userId}
-      `;
-
-      const totalLikedResult = await db`
-        SELECT COUNT(*) as count FROM recipes WHERE user_id = ${userId} AND liked = true
-      `;
-
       const dashboardData: DashboardData = {
         trending_recipe: trendingRecipeResult[0] ? parseRecipeFromDb(trendingRecipeResult[0]) : null,
         top_liked_recipes: topLikedResult.map(parseRecipeFromDb),
@@ -154,11 +162,12 @@ export const getDashboardData: RequestHandler = async (req, res) => {
         total_liked: parseInt(totalLikedResult[0].count)
       };
 
-      console.log(`Dashboard data for user ${userId}:`, {
+      console.log(`Dashboard data constructed:`, {
         total_recipes: dashboardData.total_recipes,
         total_liked: dashboardData.total_liked,
         trending_recipe: dashboardData.trending_recipe?.title || 'none'
       });
+      console.log('=== getDashboardData END ===');
 
       res.json(dashboardData);
     } catch (dbError) {
@@ -602,13 +611,27 @@ export const rateRecipe: RequestHandler = async (req, res) => {
 
 // Helper function to parse database result to Recipe type
 function parseRecipeFromDb(dbRow: any): Recipe {
+  // Helper to parse JSON fields that might already be objects
+  const parseJsonField = (field: any) => {
+    if (!field) return field;
+    if (typeof field === 'string') {
+      try {
+        return JSON.parse(field);
+      } catch (e) {
+        console.error('Failed to parse JSON field:', field);
+        return field;
+      }
+    }
+    return field; // Already an object
+  };
+
   return {
     id: dbRow.id,
     user_id: dbRow.user_id,
     title: dbRow.title,
     description: dbRow.description,
-    ingredients: JSON.parse(dbRow.ingredients),
-    instructions: JSON.parse(dbRow.instructions),
+    ingredients: parseJsonField(dbRow.ingredients),
+    instructions: parseJsonField(dbRow.instructions),
     prep_time: dbRow.prep_time,
     cook_time: dbRow.cook_time,
     servings: dbRow.servings,
