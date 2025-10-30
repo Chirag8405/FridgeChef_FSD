@@ -6,6 +6,7 @@ import { Dashboard } from "@/pages/Dashboard";
 import { GenerateRecipe } from "@/pages/GenerateRecipe";
 import { History } from "@/pages/History";
 import { Profile } from "@/pages/Profile";
+import { Auth } from "@/pages/Auth";
 import { NotFound } from "@/pages/NotFound";
 
 function App() {
@@ -19,6 +20,7 @@ function App() {
               <Route path="/generate" element={<GenerateRecipe />} />
               <Route path="/history" element={<History />} />
               <Route path="/profile" element={<Profile />} />
+              <Route path="/auth" element={<Auth />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

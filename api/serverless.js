@@ -1,30 +1,39 @@
 // Vercel serverless function entry point
-// This imports the built server and wraps it for serverless deployment
+// Directly creates the Express app without relying on build artifacts
 const serverless = require('serverless-http');
-const path = require('path');
 
-// Import the serverless build (no app.listen() calls)
-// Try both possible paths - Vercel might change directory structure
-let serverBuild;
+// We need to transpile TypeScript on-the-fly or use the built files
+// Since dist/ is gitignored, we'll require the built production.cjs directly
+// Vercel builds the project, so dist/server/production.cjs should exist
+
+let app;
+
 try {
-  serverBuild = require('../dist/serverless/serverless.cjs');
+  // Try to load the main server build (includes app.listen but we'll extract the app)
+  const serverModule = require('../dist/server/production.cjs');
+  
+  // The production.cjs exports createServer function
+  if (serverModule.createServer) {
+    app = serverModule.createServer();
+  } else {
+    throw new Error('createServer not found in production.cjs');
+  }
 } catch (err) {
-  console.error('Failed to load from dist/serverless, trying alternative path:', err.message);
+  console.error('Error loading server:', err.message);
+  
+  // Fallback: try to load server files directly and create app
   try {
-    // Try from root if dist/serverless doesn't exist
-    serverBuild = require(path.join(__dirname, '../dist/serverless/serverless.cjs'));
+    // This won't work without transpilation, but let's try
+    const { createServer } = require('../server/index.ts');
+    app = createServer();
   } catch (err2) {
-    console.error('Failed to load serverless build:', err2.message);
-    throw new Error('Could not load serverless build from any known path. Build may have failed or files are missing.');
+    console.error('Fallback failed:', err2.message);
+    throw new Error('Could not load server. Ensure build completed successfully.');
   }
 }
 
-// Get the Express app
-const app = serverBuild.app || serverBuild.default?.app;
-
 if (!app) {
-  const availableExports = Object.keys(serverBuild).join(', ');
-  throw new Error(`Express app not found in serverless build. Available exports: ${availableExports || 'none'}`);
+  throw new Error('Failed to create Express app');
 }
 
 console.log('Serverless function initialized successfully');

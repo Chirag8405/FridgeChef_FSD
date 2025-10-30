@@ -93,9 +93,11 @@ export function Layout({ children }: LayoutProps) {
           {/* User Menu or Login */}
           <div className="flex items-center gap-2">
             {isGuest && (
-              <Button variant="outline" size="sm">
-                <LogIn className="h-4 w-4 mr-2" />
-                Sign In
+              <Button variant="outline" size="sm" asChild>
+                <Link to="/auth">
+                  <LogIn className="h-4 w-4 mr-2" />
+                  Sign In
+                </Link>
               </Button>
             )}
             
