@@ -10,7 +10,7 @@ export default defineConfig({
     rollupOptions: {
       input: path.resolve(__dirname, "server/serverless.ts"),
       external: [
-        // Node.js built-ins
+        // Only Node.js built-ins should be external
         "fs",
         "path",
         "url",
@@ -24,9 +24,7 @@ export default defineConfig({
         "buffer",
         "querystring",
         "child_process",
-        // External dependencies that should not be bundled
-        "express",
-        "cors",
+        // Bundle all npm packages for serverless
       ],
       output: {
         format: "cjs",

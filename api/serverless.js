@@ -11,13 +11,15 @@ try {
   
   const serverModule = require(serverPath);
   
-  if (serverModule.createServer && typeof serverModule.createServer === 'function') {
-    const app = serverModule.createServer();
-    handler = serverless(app);
-    console.log('✓ Serverless function initialized successfully');
-  } else {
-    throw new Error('createServer function not found in server.cjs');
+  // Use the pre-created app instance (not createServer which would reinitialize)
+  const app = serverModule.app;
+  
+  if (!app) {
+    throw new Error('Express app not found in server.cjs exports');
   }
+  
+  handler = serverless(app);
+  console.log('✓ Serverless function initialized successfully');
 } catch (error) {
   console.error('✗ Fatal error initializing serverless function:', error);
   console.error('Error details:', {
