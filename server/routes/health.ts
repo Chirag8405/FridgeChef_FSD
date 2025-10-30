@@ -105,6 +105,20 @@ export const testDbConnection: RequestHandler = async (req, res) => {
         dbInfo.status = 'connected';
         dbInfo.currentTime = result[0]?.current_time;
         dbInfo.pgVersion = result[0]?.pg_version;
+        
+        // Check recipe counts
+        const totalRecipes = await db`SELECT COUNT(*) as count FROM recipes`;
+        dbInfo.totalRecipes = parseInt(totalRecipes[0]?.count || '0');
+        
+        // Get recipes by user
+        const recipesByUser = await db`
+          SELECT user_id, COUNT(*) as count 
+          FROM recipes 
+          GROUP BY user_id 
+          ORDER BY count DESC 
+          LIMIT 10
+        `;
+        dbInfo.recipesByUser = recipesByUser;
       }
     } catch (error: any) {
       dbInfo.status = 'error';
