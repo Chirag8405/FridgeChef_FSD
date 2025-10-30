@@ -10,7 +10,7 @@
       "destination": "/api/serverless"
     },
     {
-      "source": "/((?!api).*)",
+      "source": "/(.*)",
       "destination": "/index.html"
     }
   ],
