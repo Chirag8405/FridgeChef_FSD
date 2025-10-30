@@ -67,11 +67,17 @@ export function RecipeProvider({ children }: { children: ReactNode }) {
   const syncWithDatabase = async (syncUserId: string) => {
     try {
       setLoading(true);
-      const response = await fetch(`/api/recipes?userId=${syncUserId}`);
+      const response = await fetch(`/api/recipes/history?filter=all&sort_by=created_at&sort_order=desc&page=1&limit=100`, {
+        headers: {
+          'user-id': syncUserId,
+        },
+      });
       if (response.ok) {
         const data = await response.json();
         console.log('Synced recipes from database:', data.recipes?.length || 0);
         setRecipes(data.recipes || []);
+      } else {
+        console.error('Failed to sync recipes, status:', response.status);
       }
     } catch (error) {
       console.error('Failed to sync recipes from database:', error);
