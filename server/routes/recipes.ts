@@ -219,28 +219,32 @@ export const getRecipeHistory: RequestHandler = async (req, res) => {
       const sortField = validSortFields.includes(sort_by as string) ? (sort_by as string) : 'created_at';
       const sortDirection = sort_order === 'asc' ? 'ASC' : 'DESC';
 
+      // Build safe SQL queries with validated sort fields and directions
       let recipes;
       if (filter === 'liked') {
-        recipes = await db`
+        const query = `
           SELECT * FROM recipes 
-          WHERE user_id = ${userId} AND liked = true
-          ORDER BY ${db.unsafe(sortField)} ${db.unsafe(sortDirection)}
-          LIMIT ${Number(limit)} OFFSET ${offset}
+          WHERE user_id = $1 AND liked = true
+          ORDER BY ${sortField} ${sortDirection}
+          LIMIT $2 OFFSET $3
         `;
+        recipes = await db(query, [userId, Number(limit), offset]);
       } else if (filter === 'disliked') {
-        recipes = await db`
+        const query = `
           SELECT * FROM recipes 
-          WHERE user_id = ${userId} AND liked = false
-          ORDER BY ${db.unsafe(sortField)} ${db.unsafe(sortDirection)}
-          LIMIT ${Number(limit)} OFFSET ${offset}
+          WHERE user_id = $1 AND liked = false
+          ORDER BY ${sortField} ${sortDirection}
+          LIMIT $2 OFFSET $3
         `;
+        recipes = await db(query, [userId, Number(limit), offset]);
       } else {
-        recipes = await db`
+        const query = `
           SELECT * FROM recipes 
-          WHERE user_id = ${userId}
-          ORDER BY ${db.unsafe(sortField)} ${db.unsafe(sortDirection)}
-          LIMIT ${Number(limit)} OFFSET ${offset}
+          WHERE user_id = $1
+          ORDER BY ${sortField} ${sortDirection}
+          LIMIT $2 OFFSET $3
         `;
+        recipes = await db(query, [userId, Number(limit), offset]);
       }
 
       const totalResult = await countQuery;

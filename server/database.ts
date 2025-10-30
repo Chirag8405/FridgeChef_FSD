@@ -1,9 +1,9 @@
-import { neon } from '@neondatabase/serverless';
+import { neon, NeonQueryFunction } from '@neondatabase/serverless';
 
-let sql: ReturnType<typeof neon> | null = null;
+let sql: NeonQueryFunction<false, false> | null = null;
 
 // Lazy initialization of database connection
-export const getDb = () => {
+export const getDb = (): NeonQueryFunction<false, false> | null => {
   if (!sql) {
     const databaseUrl = process.env.DATABASE_URL;
     if (!databaseUrl) {
@@ -24,10 +24,13 @@ export const getDb = () => {
 };
 
 // Connection pool configuration for better performance
-export const getDbWithRetry = async (maxRetries = 3) => {
+export const getDbWithRetry = async (maxRetries = 3): Promise<NeonQueryFunction<false, false>> => {
   for (let i = 0; i < maxRetries; i++) {
     try {
       const db = getDb();
+      if (!db) {
+        throw new Error('Database not configured');
+      }
       // Test connection
       await db`SELECT 1`;
       return db;
@@ -59,9 +62,11 @@ export const initializeDatabase = async () => {
         name VARCHAR(255) NOT NULL,
         email VARCHAR(255) UNIQUE NOT NULL,
         password_hash VARCHAR(255) NOT NULL,
+        bio TEXT,
         preferences JSONB DEFAULT '{}',
         theme VARCHAR(10) DEFAULT 'light',
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `;
 
@@ -121,6 +126,17 @@ export const initializeDatabase = async () => {
       )
     `;
 
+    // Create recipe_likes table for user likes
+    await sql`
+      CREATE TABLE IF NOT EXISTS recipe_likes (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        recipe_id UUID NOT NULL REFERENCES recipes(id) ON DELETE CASCADE,
+        user_id UUID NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(recipe_id, user_id)
+      )
+    `;
+
     // Create indexes for better performance
     await sql`CREATE INDEX IF NOT EXISTS idx_recipes_user_id ON recipes(user_id)`;
     await sql`CREATE INDEX IF NOT EXISTS idx_recipes_liked ON recipes(liked)`;
@@ -131,6 +147,8 @@ export const initializeDatabase = async () => {
     await sql`CREATE INDEX IF NOT EXISTS idx_user_ingredients_user_id ON user_ingredients(user_id)`;
     await sql`CREATE INDEX IF NOT EXISTS idx_recipe_ratings_recipe_id ON recipe_ratings(recipe_id)`;
     await sql`CREATE INDEX IF NOT EXISTS idx_recipe_ratings_user_id ON recipe_ratings(user_id)`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_recipe_likes_recipe_id ON recipe_likes(recipe_id)`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_recipe_likes_user_id ON recipe_likes(user_id)`;
 
     console.log('✅ Database schema initialized successfully');
   } catch (error) {
