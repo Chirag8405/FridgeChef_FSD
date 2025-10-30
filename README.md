@@ -302,8 +302,6 @@ Project Link: [https://github.com/Chirag8405/FridgeChef_FSD](https://github.com/
 
 <div align="center">
 
-**Built with ❤️ and AI**
-
 Made by [Chirag](https://github.com/Chirag8405)
 
 ⭐ Star this repo if you find it helpful!
