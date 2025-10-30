@@ -772,9 +772,12 @@ const getRecipeHistory = async (req, res) => {
           WHERE user_id = ${userId}
         `;
       }
-      console.log("Recipe history raw results:", {
-        recipesCount: recipes?.length,
-        countResult: countResult[0]
+      console.log("Recipe history raw query results:", {
+        userId,
+        recipesLength: recipes?.length,
+        recipesRaw: recipes,
+        countResultRaw: countResult,
+        countValue: countResult[0]?.count
       });
       const total = parseInt(countResult[0]?.count || "0");
       const hasMore = offset + Number(limit) < total;
