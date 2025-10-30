@@ -13,15 +13,10 @@
     {
       "source": "/api/(.*)",
       "destination": "/api/serverless-direct"
-    }
-  ],
-  "routes": [
-    {
-      "handle": "filesystem"
     },
     {
-      "src": "/(.*)",
-      "dest": "/index.html"
+      "source": "/(.*)",
+      "destination": "/index.html"
     }
   ],
   "headers": [
