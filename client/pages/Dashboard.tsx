@@ -12,7 +12,15 @@ export function Dashboard() {
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const { user, isGuest, guestId } = useAuth();
-  const { recipes, likedRecipes, totalRecipes, likeRecipe } = useRecipes();
+  const { recipes, likedRecipes, totalRecipes, likeRecipe, syncWithDatabase } = useRecipes();
+
+  // Sync with database when user logs in
+  useEffect(() => {
+    if (user && user.id) {
+      console.log('User logged in, syncing recipes with database for user:', user.id);
+      syncWithDatabase(user.id);
+    }
+  }, [user?.id]);
 
   useEffect(() => {
     fetchDashboardData();
