@@ -9,14 +9,16 @@ import {
   likeRecipe, 
   getRecipe,
   deleteRecipe,
-  rateRecipe
+  rateRecipe,
+  getDetailedExplanation
 } from "./routes/recipes";
 import { 
   register, 
   login, 
   logout, 
-  getCurrentUser, 
-  authenticateToken 
+  getCurrentUser,
+  getProfile,
+  updateProfile
 } from "./routes/auth";
 
 export function createServer() {
@@ -51,6 +53,10 @@ export function createServer() {
   app.post("/api/auth/login", login);
   app.post("/api/auth/logout", logout);
   app.get("/api/auth/me", getCurrentUser);
+  
+  // Profile routes
+  app.get("/api/profile", getProfile);
+  app.put("/api/profile", updateProfile);
 
   // Recipe routes
   app.post("/api/recipes/generate", generateRecipes);
@@ -60,11 +66,12 @@ export function createServer() {
   app.get("/api/recipes/:id", getRecipe);
   app.delete("/api/recipes/:id", deleteRecipe);
   app.post("/api/recipes/rate", rateRecipe);
+  app.post("/api/recipes/:id/detailed-explanation", getDetailedExplanation);
 
   // Protected routes (require authentication)
   // app.get("/api/protected-example", authenticateToken, protectedHandler);
 
-  // Error handling middleware
+  // Error handling middleware (only for actual errors, not 404s)
   app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
     console.error('Server error:', err);
     
@@ -81,15 +88,8 @@ export function createServer() {
     });
   });
 
-  // 404 handler
-  app.use((req, res) => {
-    res.status(404).json({
-      success: false,
-      message: 'API endpoint not found',
-      path: req.path,
-      timestamp: new Date().toISOString()
-    });
-  });
+  // NOTE: 404 handler is in node-build.ts after static file serving
+  // to properly handle both API 404s and SPA routing
 
   // Initialize database on startup (async, non-blocking)
   setImmediate(() => {

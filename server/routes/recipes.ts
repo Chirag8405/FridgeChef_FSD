@@ -566,3 +566,55 @@ function parseRecipeFromDb(dbRow: any): Recipe {
     created_at: dbRow.created_at
   };
 }
+
+// Get detailed explanation for a recipe
+export const getDetailedExplanation: RequestHandler = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    if (!id) {
+      return res.status(400).json({
+        success: false,
+        message: 'Recipe ID is required'
+      });
+    }
+
+    // Try to get recipe from database or memory
+    let recipe: Recipe | null = null;
+    
+    try {
+      const db = sql();
+      if (process.env.DATABASE_URL) {
+        const result = await db`
+          SELECT * FROM recipes WHERE id = ${id} LIMIT 1
+        `;
+        if (result.length > 0) {
+          recipe = parseRecipeFromDb(result[0]);
+        }
+      }
+    } catch (error) {
+      console.warn('Database query failed, continuing without recipe data:', error);
+    }
+
+    if (!recipe) {
+      return res.status(404).json({
+        success: false,
+        message: 'Recipe not found'
+      });
+    }
+
+    // Generate detailed explanation using OpenAI
+    const explanation = await openAIService.generateDetailedExplanation(recipe);
+
+    res.json({
+      success: true,
+      explanation
+    });
+  } catch (error) {
+    console.error('Error generating detailed explanation:', error);
+    res.status(500).json({
+      success: false,
+      message: error instanceof Error ? error.message : 'Failed to generate detailed explanation'
+    });
+  }
+};

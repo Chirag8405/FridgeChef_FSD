@@ -1,4 +1,5 @@
 import path from "path";
+import { fileURLToPath } from "url";
 import { createServer } from "./index";
 import * as express from "express";
 
@@ -6,7 +7,11 @@ const app = createServer();
 const port = process.env.PORT || 3000;
 
 // In production, serve the built SPA files
-const __dirname = import.meta.dirname;
+// For CommonJS builds, use __dirname directly; for ESM, derive from import.meta.url
+let __dirname: string;
+if (typeof __dirname === 'undefined') {
+  __dirname = path.dirname(fileURLToPath(import.meta.url));
+}
 const distPath = path.join(__dirname, "../spa");
 
 // Serve static files
@@ -14,11 +19,17 @@ app.use(express.static(distPath));
 
 // Handle React Router - serve index.html for all non-API routes
 app.get("*", (req, res) => {
-  // Don't serve index.html for API routes
-  if (req.path.startsWith("/api/") || req.path.startsWith("/health")) {
-    return res.status(404).json({ error: "API endpoint not found" });
+  // Don't serve index.html for API routes - let them return 404
+  if (req.path.startsWith("/api/")) {
+    return res.status(404).json({ 
+      success: false,
+      message: "API endpoint not found",
+      path: req.path,
+      timestamp: new Date().toISOString()
+    });
   }
 
+  // Serve index.html for all other routes (React Router will handle client-side routing)
   res.sendFile(path.join(distPath, "index.html"));
 });
 

@@ -56,12 +56,43 @@ export function Profile() {
   const [editing, setEditing] = useState(false);
   const [saved, setSaved] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     // Check if dark mode is already enabled
     const isDark = document.documentElement.classList.contains('dark');
     setDarkMode(isDark);
+    
+    // Fetch user profile data
+    fetchProfile();
   }, []);
+
+  const fetchProfile = async () => {
+    try {
+      const response = await fetch('/api/profile', {
+        headers: {
+          'user-id': 'guest-user', // TODO: Replace with actual user ID from auth context
+        }
+      });
+
+      const data = await response.json();
+      
+      if (data.success && data.user) {
+        setProfile(prev => ({
+          ...prev,
+          name: data.user.name || prev.name,
+          email: data.user.email || prev.email,
+          bio: data.user.bio || prev.bio,
+          preferences: data.user.preferences || prev.preferences,
+          stats: data.stats || prev.stats
+        }));
+      }
+    } catch (error) {
+      console.error('Error fetching profile:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const toggleDarkMode = () => {
     const newDarkMode = !darkMode;
@@ -83,11 +114,33 @@ export function Profile() {
     }));
   };
 
-  const handleSave = () => {
-    // Here you would typically save to the backend
-    setSaved(true);
-    setEditing(false);
-    setTimeout(() => setSaved(false), 3000);
+  const handleSave = async () => {
+    try {
+      const response = await fetch('/api/profile', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'user-id': 'guest-user', // TODO: Replace with actual user ID from auth context
+        },
+        body: JSON.stringify({
+          name: profile.name,
+          bio: profile.bio,
+          preferences: profile.preferences
+        })
+      });
+
+      const data = await response.json();
+      
+      if (data.success) {
+        setSaved(true);
+        setEditing(false);
+        setTimeout(() => setSaved(false), 3000);
+      } else {
+        console.error('Failed to save profile:', data.message);
+      }
+    } catch (error) {
+      console.error('Error saving profile:', error);
+    }
   };
 
   const addDietaryRestriction = (restriction: string) => {

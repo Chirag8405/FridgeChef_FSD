@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { Heart, Clock, Users, Search, SortAsc, SortDesc, ChefHat } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Heart, Clock, Users, Search, SortAsc, SortDesc, ChefHat, BookOpen, Sparkles } from 'lucide-react';
 import { RecipeHistoryResponse, Recipe } from '@shared/api';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -23,6 +23,7 @@ export function History() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
   const [totalRecipes, setTotalRecipes] = useState(0);
+  const recipeDetailsRef = useRef<HTMLDivElement>(null);
 
   const { user, guestId } = useAuth();
   const { recipes: contextRecipes, likeRecipe } = useRecipes();
@@ -128,6 +129,18 @@ export function History() {
     } catch (error) {
       console.error('Error updating recipe like status:', error);
     }
+  };
+
+  const handleRecipeSelect = (recipe: Recipe) => {
+    setSelectedRecipe(recipe);
+    // Smooth scroll to recipe details after a brief delay for rendering
+    setTimeout(() => {
+      recipeDetailsRef.current?.scrollIntoView({ 
+        behavior: 'smooth', 
+        block: 'start',
+        inline: 'nearest'
+      });
+    }, 100);
   };
 
   const filteredRecipes = recipes.filter(recipe => {
@@ -264,7 +277,7 @@ export function History() {
                 <RecipeCard
                   key={recipe.id}
                   recipe={recipe}
-                  onSelect={() => setSelectedRecipe(recipe)}
+                  onSelect={() => handleRecipeSelect(recipe)}
                   onLike={(liked) => handleLikeRecipe(recipe.id, liked)}
                 />
               ))}
@@ -275,7 +288,7 @@ export function History() {
 
       {/* Recipe Detail Modal */}
       {selectedRecipe && (
-        <Card className="recipe-card">
+        <Card ref={recipeDetailsRef} className="recipe-card scroll-mt-8">
           <CardHeader>
             <div className="flex items-start justify-between">
               <div>
@@ -377,6 +390,32 @@ function RecipeCard({
 }
 
 function RecipeDetails({ recipe }: { recipe: Recipe }) {
+  const [detailedExplanation, setDetailedExplanation] = useState<string | null>(null);
+  const [loadingExplanation, setLoadingExplanation] = useState(false);
+
+  const getDetailedExplanation = async () => {
+    setLoadingExplanation(true);
+    try {
+      const response = await fetch(`/api/recipes/${recipe.id}/detailed-explanation`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        setDetailedExplanation(data.explanation);
+      } else {
+        console.error('Failed to get detailed explanation:', data.message);
+      }
+    } catch (error) {
+      console.error('Error getting detailed explanation:', error);
+    } finally {
+      setLoadingExplanation(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Recipe Info */}
@@ -422,7 +461,28 @@ function RecipeDetails({ recipe }: { recipe: Recipe }) {
 
       {/* Instructions */}
       <div>
-        <h4 className="text-lg font-heading font-semibold mb-3">Instructions</h4>
+        <div className="flex items-center justify-between mb-3">
+          <h4 className="text-lg font-heading font-semibold">Instructions</h4>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={getDetailedExplanation}
+            disabled={loadingExplanation}
+          >
+            {loadingExplanation ? (
+              <>
+                <Sparkles className="h-4 w-4 mr-2 animate-spin" />
+                Loading...
+              </>
+            ) : (
+              <>
+                <BookOpen className="h-4 w-4 mr-2" />
+                Get Detailed Explanation
+              </>
+            )}
+          </Button>
+        </div>
+        
         <ol className="space-y-3">
           {recipe.instructions.map((step, index) => (
             <li key={index} className="flex gap-3">
@@ -433,6 +493,21 @@ function RecipeDetails({ recipe }: { recipe: Recipe }) {
             </li>
           ))}
         </ol>
+
+        {/* Detailed Explanation Section */}
+        {detailedExplanation && (
+          <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
+            <div className="flex items-center gap-2 mb-3">
+              <BookOpen className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+              <h5 className="font-semibold text-blue-900 dark:text-blue-100">Detailed Cooking Guide</h5>
+            </div>
+            <div className="prose prose-sm dark:prose-invert max-w-none">
+              <p className="text-sm text-blue-900 dark:text-blue-100 whitespace-pre-wrap leading-relaxed">
+                {detailedExplanation}
+              </p>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

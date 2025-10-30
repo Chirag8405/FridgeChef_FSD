@@ -8,11 +8,8 @@ export const getDb = () => {
     const databaseUrl = process.env.DATABASE_URL;
     if (!databaseUrl) {
       console.warn('DATABASE_URL not set, database operations will be disabled');
-      // Return a mock function for development without database
-      return {
-        query: () => Promise.resolve([]),
-        unsafe: (str: string) => str,
-      } as any;
+      // Return null when no database is configured
+      return null;
     }
     
     try {

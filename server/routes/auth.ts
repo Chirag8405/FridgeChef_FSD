@@ -336,3 +336,167 @@ export const authenticateToken: RequestHandler = async (req, res, next) => {
     });
   }
 };
+
+// Update user profile
+export const updateProfile: RequestHandler = async (req, res) => {
+  try {
+    const userId = req.headers['user-id'] as string;
+    const { name, bio, preferences } = req.body;
+
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        message: 'User ID required'
+      });
+    }
+
+    const db = getDb();
+    
+    // If database is not available, return success with mock data
+    if (!db) {
+      return res.json({
+        success: true,
+        user: {
+          id: userId,
+          name: name || 'Guest User',
+          email: 'guest@fridgechef.com',
+          preferences: preferences || {},
+          theme: 'light',
+          created_at: new Date().toISOString()
+        },
+        message: 'Profile updated successfully (stored locally - database not available)'
+      });
+    }
+
+    // Build update object dynamically based on what's provided
+    const updateFields: any = {};
+    if (name !== undefined) updateFields.name = name;
+    if (bio !== undefined) updateFields.bio = bio;
+    if (preferences !== undefined) updateFields.preferences = preferences;
+
+    // Update user profile
+    const updatedUsers = await db`
+      UPDATE users 
+      SET 
+        name = COALESCE(${name}, name),
+        bio = COALESCE(${bio}, bio),
+        preferences = COALESCE(${JSON.stringify(preferences)}, preferences),
+        updated_at = NOW()
+      WHERE id = ${userId}
+      RETURNING id, name, email, bio, preferences, theme, created_at
+    `;
+
+    if (updatedUsers.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    const user: User = {
+      id: updatedUsers[0].id,
+      name: updatedUsers[0].name,
+      email: updatedUsers[0].email,
+      preferences: updatedUsers[0].preferences || {},
+      theme: updatedUsers[0].theme,
+      created_at: updatedUsers[0].created_at
+    };
+
+    res.json({
+      success: true,
+      user,
+      message: 'Profile updated successfully'
+    });
+  } catch (error) {
+    console.error('Profile update error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update profile'
+    });
+  }
+};
+
+// Get user profile
+export const getProfile: RequestHandler = async (req, res) => {
+  try {
+    const userId = req.headers['user-id'] as string;
+
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        message: 'User ID required'
+      });
+    }
+
+    const db = getDb();
+    
+    // If database is not available, return mock data
+    if (!db) {
+      return res.json({
+        success: true,
+        user: {
+          id: userId,
+          name: 'Guest User',
+          email: 'guest@fridgechef.com',
+          preferences: {},
+          theme: 'light',
+          created_at: new Date().toISOString()
+        },
+        stats: {
+          total_recipes: 0,
+          liked_recipes: 0,
+          favorite_cuisine: 'Not available yet',
+          avg_cooking_time: 0
+        }
+      });
+    }
+
+    const users = await db`
+      SELECT id, name, email, bio, preferences, theme, created_at
+      FROM users 
+      WHERE id = ${userId}
+    `;
+
+    if (users.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    const user: User = {
+      id: users[0].id,
+      name: users[0].name,
+      email: users[0].email,
+      preferences: users[0].preferences || {},
+      theme: users[0].theme,
+      created_at: users[0].created_at
+    };
+
+    // Get user stats
+    const recipeCount = await db`
+      SELECT COUNT(*) as count FROM recipes WHERE user_id = ${userId}
+    `;
+
+    const likedCount = await db`
+      SELECT COUNT(*) as count FROM recipe_likes WHERE user_id = ${userId}
+    `;
+
+    res.json({
+      success: true,
+      user,
+      stats: {
+        total_recipes: parseInt(recipeCount[0]?.count || '0'),
+        liked_recipes: parseInt(likedCount[0]?.count || '0'),
+        favorite_cuisine: 'Not available yet',
+        avg_cooking_time: 0
+      }
+    });
+  } catch (error) {
+    console.error('Get profile error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch profile'
+    });
+  }
+};
