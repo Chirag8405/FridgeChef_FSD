@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Plus, Clock, Users, Heart, TrendingUp, ChefHat, Sparkles } from 'lucide-react';
 import { DashboardData, Recipe } from '@shared/api';
 import { Button } from '@/components/ui/button';
@@ -263,7 +263,10 @@ function TrendingRecipeCard({
             {recipe.difficulty}
           </Badge>
           <button
-            onClick={() => onLike(recipe.id, !recipe.liked)}
+            onClick={(e) => {
+              e.stopPropagation();
+              onLike(recipe.id, !recipe.liked);
+            }}
             className={`transition-colors ${
               recipe.liked ? 'text-red-500' : 'text-muted-foreground hover:text-red-500'
             }`}
@@ -323,14 +326,22 @@ function RecipePreviewCard({
   recipe: Recipe; 
   onLike: (recipeId: string, liked: boolean) => void;
 }) {
+  const navigate = useNavigate();
+  
   return (
-    <Card className="recipe-card hover:shadow-lg transition-all duration-200">
+    <Card 
+      className="recipe-card hover:shadow-lg transition-all duration-200 cursor-pointer"
+      onClick={() => navigate('/history')}
+    >
       <CardContent className="p-4">
         <div className="space-y-3">
           <div className="flex items-start justify-between">
             <h3 className="font-heading font-medium text-lg leading-tight">{recipe.title}</h3>
             <button
-              onClick={() => onLike(recipe.id, !recipe.liked)}
+              onClick={(e) => {
+                e.stopPropagation();
+                onLike(recipe.id, !recipe.liked);
+              }}
               className={`transition-colors ${
                 recipe.liked ? 'text-red-500' : 'text-muted-foreground hover:text-red-500'
               }`}
