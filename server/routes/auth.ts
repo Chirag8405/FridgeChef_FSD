@@ -341,7 +341,7 @@ export const authenticateToken: RequestHandler = async (req, res, next) => {
 export const updateProfile: RequestHandler = async (req, res) => {
   try {
     const userId = req.headers['user-id'] as string;
-    const { name, bio, preferences } = req.body;
+    const { name, preferences } = req.body;
 
     if (!userId) {
       return res.status(400).json({
@@ -371,7 +371,6 @@ export const updateProfile: RequestHandler = async (req, res) => {
     // Build update object dynamically based on what's provided
     const updateFields: any = {};
     if (name !== undefined) updateFields.name = name;
-    if (bio !== undefined) updateFields.bio = bio;
     if (preferences !== undefined) updateFields.preferences = preferences;
 
     // Update user profile
@@ -379,11 +378,10 @@ export const updateProfile: RequestHandler = async (req, res) => {
       UPDATE users 
       SET 
         name = COALESCE(${name}, name),
-        bio = COALESCE(${bio}, bio),
         preferences = COALESCE(${JSON.stringify(preferences)}, preferences),
         updated_at = NOW()
       WHERE id = ${userId}
-      RETURNING id, name, email, bio, preferences, theme, created_at
+      RETURNING id, name, email, preferences, theme, created_at
     `;
 
     if (updatedUsers.length === 0) {
@@ -441,18 +439,12 @@ export const getProfile: RequestHandler = async (req, res) => {
           preferences: {},
           theme: 'light',
           created_at: new Date().toISOString()
-        },
-        stats: {
-          total_recipes: 0,
-          liked_recipes: 0,
-          favorite_cuisine: 'Not available yet',
-          avg_cooking_time: 0
         }
       });
     }
 
     const users = await db`
-      SELECT id, name, email, bio, preferences, theme, created_at
+      SELECT id, name, email, preferences, theme, created_at
       FROM users 
       WHERE id = ${userId}
     `;
@@ -473,24 +465,9 @@ export const getProfile: RequestHandler = async (req, res) => {
       created_at: users[0].created_at
     };
 
-    // Get user stats
-    const recipeCount = await db`
-      SELECT COUNT(*) as count FROM recipes WHERE user_id = ${userId}
-    `;
-
-    const likedCount = await db`
-      SELECT COUNT(*) as count FROM recipe_likes WHERE user_id = ${userId}
-    `;
-
     res.json({
       success: true,
-      user,
-      stats: {
-        total_recipes: parseInt(recipeCount[0]?.count || '0'),
-        liked_recipes: parseInt(likedCount[0]?.count || '0'),
-        favorite_cuisine: 'Not available yet',
-        avg_cooking_time: 0
-      }
+      user
     });
   } catch (error) {
     console.error('Get profile error:', error);

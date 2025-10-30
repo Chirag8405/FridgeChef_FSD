@@ -15,7 +15,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 interface UserProfile {
   name: string;
   email: string;
-  bio: string;
   preferences: {
     dietary_restrictions: string[];
     preferred_cuisines: string[];
@@ -24,19 +23,12 @@ interface UserProfile {
     theme: 'light' | 'dark' | 'system';
     notifications: boolean;
   };
-  stats: {
-    total_recipes: number;
-    liked_recipes: number;
-    favorite_cuisine: string;
-    avg_cooking_time: number;
-  };
 }
 
 export function Profile() {
   const [profile, setProfile] = useState<UserProfile>({
     name: 'Guest User',
     email: 'guest@FridgeChef.com',
-    bio: 'I love creating delicious recipes with AI assistance!',
     preferences: {
       dietary_restrictions: [],
       preferred_cuisines: [],
@@ -44,12 +36,6 @@ export function Profile() {
       cooking_time_preference: 'medium',
       theme: 'light',
       notifications: true,
-    },
-    stats: {
-      total_recipes: 0,
-      liked_recipes: 0,
-      favorite_cuisine: 'Not available yet',
-      avg_cooking_time: 0,
     }
   });
 
@@ -78,13 +64,20 @@ export function Profile() {
       const data = await response.json();
       
       if (data.success && data.user) {
+        // Safely merge preferences with defaults to ensure arrays exist
+        const userPreferences = data.user.preferences || {};
         setProfile(prev => ({
           ...prev,
           name: data.user.name || prev.name,
           email: data.user.email || prev.email,
-          bio: data.user.bio || prev.bio,
-          preferences: data.user.preferences || prev.preferences,
-          stats: data.stats || prev.stats
+          preferences: {
+            dietary_restrictions: userPreferences.dietary_restrictions || [],
+            preferred_cuisines: userPreferences.preferred_cuisines || [],
+            spice_level: userPreferences.spice_level || prev.preferences.spice_level,
+            cooking_time_preference: userPreferences.cooking_time_preference || prev.preferences.cooking_time_preference,
+            theme: userPreferences.theme || prev.preferences.theme,
+            notifications: userPreferences.notifications !== undefined ? userPreferences.notifications : prev.preferences.notifications,
+          }
         }));
       }
     } catch (error) {
@@ -124,7 +117,6 @@ export function Profile() {
         },
         body: JSON.stringify({
           name: profile.name,
-          bio: profile.bio,
           preferences: profile.preferences
         })
       });
@@ -210,10 +202,9 @@ export function Profile() {
       )}
 
       <Tabs defaultValue="profile" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="profile">Profile</TabsTrigger>
           <TabsTrigger value="preferences">Preferences</TabsTrigger>
-          <TabsTrigger value="stats">Statistics</TabsTrigger>
           <TabsTrigger value="settings">Settings</TabsTrigger>
         </TabsList>
 
@@ -258,18 +249,6 @@ export function Profile() {
                   />
                 </div>
               </div>
-              
-              <div>
-                <Label htmlFor="bio">Bio</Label>
-                <Textarea
-                  id="bio"
-                  value={profile.bio}
-                  onChange={(e) => setProfile(prev => ({ ...prev, bio: e.target.value }))}
-                  disabled={!editing}
-                  placeholder="Tell us about yourself and your cooking style..."
-                  rows={3}
-                />
-              </div>
 
               {editing && (
                 <div className="flex gap-2">
@@ -296,7 +275,7 @@ export function Profile() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex flex-wrap gap-2">
-                  {profile.preferences.dietary_restrictions.map((restriction) => (
+                  {profile.preferences.dietary_restrictions?.map((restriction) => (
                     <Badge key={restriction} variant="secondary" className="flex items-center gap-1">
                       {restriction}
                       <button
@@ -332,7 +311,7 @@ export function Profile() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex flex-wrap gap-2">
-                  {profile.preferences.preferred_cuisines.map((cuisine) => (
+                  {profile.preferences.preferred_cuisines?.map((cuisine) => (
                     <Badge key={cuisine} variant="secondary" className="flex items-center gap-1">
                       {cuisine}
                       <button
@@ -412,61 +391,6 @@ export function Profile() {
                       </SelectContent>
                     </Select>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        {/* Statistics Tab */}
-        <TabsContent value="stats">
-          <div className="grid gap-6 md:grid-cols-2">
-            <Card className="recipe-card">
-              <CardHeader>
-                <CardTitle>Recipe Statistics</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="text-center">
-                    <div className="text-3xl font-bold text-orange-600">{profile.stats.total_recipes}</div>
-                    <div className="text-sm text-muted-foreground">Total Recipes</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-3xl font-bold text-green-600">{profile.stats.liked_recipes}</div>
-                    <div className="text-sm text-muted-foreground">Liked Recipes</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-3xl font-bold text-blue-600">
-                      {profile.stats.total_recipes > 0 ? Math.round((profile.stats.liked_recipes / profile.stats.total_recipes) * 100) : 0}%
-                    </div>
-                    <div className="text-sm text-muted-foreground">Success Rate</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-3xl font-bold text-purple-600">{profile.stats.avg_cooking_time}m</div>
-                    <div className="text-sm text-muted-foreground">Avg. Cook Time</div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="recipe-card">
-              <CardHeader>
-                <CardTitle>Cooking Insights</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <Label>Favorite Cuisine</Label>
-                  <div className="text-lg font-semibold text-orange-600">{profile.stats.favorite_cuisine}</div>
-                </div>
-                <Separator />
-                <div>
-                  <Label>Most Active Day</Label>
-                  <div className="text-lg font-semibold">Not available yet</div>
-                </div>
-                <Separator />
-                <div>
-                  <Label>Recipe Streak</Label>
-                  <div className="text-lg font-semibold">0 days</div>
                 </div>
               </CardContent>
             </Card>

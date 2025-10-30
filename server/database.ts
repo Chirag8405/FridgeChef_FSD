@@ -62,7 +62,6 @@ export const initializeDatabase = async () => {
         name VARCHAR(255) NOT NULL,
         email VARCHAR(255) UNIQUE NOT NULL,
         password_hash VARCHAR(255) NOT NULL,
-        bio TEXT,
         preferences JSONB DEFAULT '{}',
         theme VARCHAR(10) DEFAULT 'light',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
